@@ -119,31 +119,35 @@ export default function CreateEvent() {
                 value={formData.eventName}
                 onChange={handleInputChange}
                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                placeholder="e.g., Team Meeting, Fantasy Football Draft"
+                placeholder="e.g., Team Meeting, Fantasy Football Draft, Book Club Discussion"
               />
             </div>
 
             {/* Description */}
             <div className="mb-6">
               <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Description (Optional)
+                Description & Context
               </label>
               <textarea
                 id="description"
                 name="description"
-                rows={3}
+                rows={4}
                 value={formData.description}
                 onChange={handleInputChange}
                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                placeholder="Add any additional details about your event..."
+                placeholder="Provide context to help participants give better availability responses. For example:&#10;&#10;• Will this need to be during weekday business hours or can it be evenings/weekends?&#10;• How long will the meeting be?&#10;• Any specific preferences or constraints?&#10;• Is this urgent or can it wait for optimal timing?"
               />
+              <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                <strong>💡 Pro tip:</strong> Include timing preferences (weekdays vs weekends, business hours vs evenings) 
+                to help participants provide more targeted availability.
+              </div>
             </div>
 
             {/* Date Range */}
             <div className="grid md:grid-cols-2 gap-4 mb-8">
               <div>
                 <label htmlFor="windowStart" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Available From *
+                  Event Window Start *
                 </label>
                 <input
                   type="date"
@@ -154,10 +158,13 @@ export default function CreateEvent() {
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Earliest possible date for the event
+                </p>
               </div>
               <div>
                 <label htmlFor="windowEnd" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Available Until *
+                  Event Window End *
                 </label>
                 <input
                   type="date"
@@ -168,6 +175,9 @@ export default function CreateEvent() {
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Latest possible date for the event
+                </p>
               </div>
             </div>
 

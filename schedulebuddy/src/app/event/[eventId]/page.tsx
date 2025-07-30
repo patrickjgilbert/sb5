@@ -28,23 +28,57 @@ export default function ParticipantPage() {
     availability: ''
   });
 
-  // Simulated data for now - in a real app this would come from your API/database
+  // Get event data - try localStorage first, then fallback
   useEffect(() => {
-    setTimeout(() => {
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setDate(startDate.getDate() + 7);
-
+    try {
+      // Try to get from localStorage first (if coming from a recent creation)
+      const recentEvents = JSON.parse(localStorage.getItem('recentEvents') || '[]') as Array<{
+        id: string;
+        name: string;
+        description?: string;
+        createdAt: string;
+      }>;
+      const currentEvent = recentEvents.find(event => event.id === eventId);
+      
+      if (currentEvent) {
+        // Calculate window dates based on creation time
+        const createdDate = new Date(currentEvent.createdAt);
+        const windowStart = createdDate.toISOString().split('T')[0];
+        const windowEnd = new Date(createdDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        
+        setEventData({
+          id: eventId,
+          name: currentEvent.name,
+          description: currentEvent.description || '',
+          windowStart: windowStart,
+          windowEnd: windowEnd,
+          createdAt: currentEvent.createdAt,
+        });
+      } else {
+        // Fallback to default data for demonstration
+        // In a real app, this would fetch from an API
+        setEventData({
+          id: eventId,
+          name: 'Event',
+          description: 'Please share your availability so we can find the best time for everyone.',
+          windowStart: new Date().toISOString().split('T')[0],
+          windowEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          createdAt: new Date().toISOString(),
+        });
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading event data:', error);
       setEventData({
         id: eventId,
-        name: 'Team Meeting',
-        description: 'Weekly team sync to discuss project updates and plan next steps',
-        windowStart: startDate.toISOString().split('T')[0],
-        windowEnd: endDate.toISOString().split('T')[0],
+        name: 'Event',
+        description: 'Please share your availability so we can find the best time for everyone.',
+        windowStart: new Date().toISOString().split('T')[0],
+        windowEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         createdAt: new Date().toISOString(),
       });
       setLoading(false);
-    }, 1000);
+    }
   }, [eventId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -102,14 +136,32 @@ export default function ParticipantPage() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
-        <div className="max-w-md mx-auto text-center bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+        <div className="max-w-lg mx-auto text-center bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
           <div className="text-6xl mb-4">🎉</div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Thank You!
           </h1>
           <p className="text-gray-600 dark:text-gray-300 mb-6">
-            Your availability has been submitted successfully. The organizer will review all responses and get back to you with the best meeting times.
+            Your availability has been submitted successfully. The event organizer will analyze all responses and share the best meeting times with the group.
           </p>
+          
+          {/* Link back to participant form */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+              📢 Help Us Get Everyone&apos;s Input
+            </h3>
+            <p className="text-blue-800 dark:text-blue-200 text-sm mb-3">
+              The more responses we collect, the better our AI can find times that work for everyone. 
+              Please remind others in your group to fill out their availability too!
+            </p>
+            <Link
+              href={`/event/${eventId}`}
+              className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium text-sm"
+            >
+              📋 Participant Form Link
+            </Link>
+          </div>
+
           <Link
             href="/"
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 inline-flex items-center justify-center"
@@ -149,7 +201,7 @@ export default function ParticipantPage() {
           </h2>
           <ol className="list-decimal list-inside space-y-2 text-blue-800 dark:text-blue-200 text-sm">
             <li>Enter your name and describe when you&apos;re available</li>
-            <li>Use natural language - be as specific or general as you like</li>
+            <li>Use natural language - be as specific or general as you like. Include times that are less than ideal or when you&apos;re flexible</li>
             <li>AI will analyze everyone&apos;s responses to find the best meeting times</li>
             <li>The organizer will share the recommended times with the group</li>
           </ol>
@@ -186,11 +238,11 @@ export default function ParticipantPage() {
                 value={formData.availability}
                 onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                placeholder="Describe your availability in your own words. For example:&#10;&#10;• Weekday evenings after 6 PM&#10;• Not available August 11-18 (vacation)&#10;• Prefer mornings on weekends&#10;• Free most afternoons except Fridays&#10;• Any time works except Thursday evenings"
+                placeholder="Describe your availability in your own words. For example:&#10;&#10;• Weekday evenings after 6 PM&#10;• Ideally after 8pm, because that&apos;s when my kids go to bed&#10;• I have a recurring meeting on Friday at 2 pm, but that can be moved if necessary&#10;• Not available August 11-18 (vacation)&#10;• Prefer mornings on weekends, but flexible for the right time"
               />
               <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 <strong>Tips:</strong> Be as specific or general as you like. Mention preferred times, days to avoid, 
-                time zones if relevant, or any other scheduling preferences.
+                times that are less than ideal but possible, time zones if relevant, or any other scheduling preferences.
               </div>
             </div>
 
@@ -201,9 +253,10 @@ export default function ParticipantPage() {
               </h3>
               <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                 <div>• &quot;Weekday evenings after 7 PM, not available August 11-18&quot;</div>
-                <div>• &quot;Mornings work best, prefer before 11 AM on weekdays&quot;</div>
+                <div>• &quot;Ideally after 8pm because that&apos;s when my kids go to bed&quot;</div>
+                <div>• &quot;I have a recurring meeting Friday at 2pm, but can move if necessary&quot;</div>
                 <div>• &quot;Pretty flexible except can&apos;t do Friday evenings or weekends&quot;</div>
-                <div>• &quot;Available most afternoons, prefer 2-5 PM slot if possible&quot;</div>
+                <div>• &quot;Mornings work best, but Thursday afternoons are also possible&quot;</div>
               </div>
             </div>
 

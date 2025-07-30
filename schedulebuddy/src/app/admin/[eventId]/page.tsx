@@ -16,11 +16,7 @@ interface EventData {
 interface Submission {
   id: string;
   name: string;
-  email: string;
-  availabilities: Array<{
-    date: string;
-    timeSlots: string[];
-  }>;
+  availability: string;
   submittedAt: string;
 }
 
@@ -47,21 +43,55 @@ export default function AdminDashboard() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copyAnimation, setCopyAnimation] = useState(false);
 
-  // Simulated data for now - in a real app this would come from your API/database
+  // Get event data from localStorage (where it was stored after creation)
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setEventData({
-        id: eventId,
-        name: 'Team Meeting',
-        description: 'Weekly team sync to discuss project updates',
-        windowStart: new Date().toISOString().split('T')[0],
-        windowEnd: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        createdAt: new Date().toISOString(),
-      });
+    try {
+      // First try to get from localStorage (if just created)
+      const recentEvents = JSON.parse(localStorage.getItem('recentEvents') || '[]') as Array<{
+        id: string;
+        name: string;
+        description?: string;
+        createdAt: string;
+      }>;
+      const currentEvent = recentEvents.find(event => event.id === eventId);
+      
+      if (currentEvent) {
+        // Calculate window dates based on creation time
+        const createdDate = new Date(currentEvent.createdAt);
+        const windowStart = createdDate.toISOString().split('T')[0];
+        const windowEnd = new Date(createdDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        
+        setEventData({
+          id: eventId,
+          name: currentEvent.name,
+          description: currentEvent.description || '',
+          windowStart: windowStart,
+          windowEnd: windowEnd,
+          createdAt: currentEvent.createdAt,
+        });
+      } else {
+        // Fallback to default data for demonstration
+        setEventData({
+          id: eventId,
+          name: 'Event',
+          description: 'Scheduling coordination event',
+          windowStart: new Date().toISOString().split('T')[0],
+          windowEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      // TODO: In a real app, also fetch submissions from API
+      // For now, using empty array
+      setSubmissions([]);
       setLoading(false);
-    }, 1000);
+    } catch (error) {
+      console.error('Error loading event data:', error);
+      setError('Failed to load event data');
+      setLoading(false);
+    }
   }, [eventId]);
 
   const handleAnalyze = async () => {
@@ -87,6 +117,33 @@ export default function AdminDashboard() {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleCopyLink = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopyAnimation(true);
+      setTimeout(() => setCopyAnimation(false), 300);
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const calculateEventWindow = () => {
+    if (!eventData?.windowStart || !eventData?.windowEnd) return 0;
+    const start = new Date(eventData.windowStart);
+    const end = new Date(eventData.windowEnd);
+    return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
   };
 
   if (loading) {
@@ -145,7 +202,7 @@ export default function AdminDashboard() {
             </p>
           )}
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            Event ID: {eventId} • Available {eventData?.windowStart} to {eventData?.windowEnd}
+            Event ID: {eventId} • Window: {eventData?.windowStart && formatDate(eventData.windowStart)} to {eventData?.windowEnd && formatDate(eventData.windowEnd)}
           </div>
         </div>
 
@@ -158,52 +215,29 @@ export default function AdminDashboard() {
                 📤 Share Your Event
               </h2>
               
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Participant Link
-                  </label>
-                  <div className="flex">
-                    <input
-                      type="text"
-                      value={participantUrl}
-                      readOnly
-                      className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg bg-gray-50 dark:bg-gray-700 dark:text-white"
-                    />
-                    <button
-                      onClick={() => navigator.clipboard.writeText(participantUrl)}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-r-lg"
-                    >
-                      Copy
-                    </button>
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Share this link with participants to collect their availability
-                  </p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Participant Link
+                </label>
+                <div className="flex">
+                  <input
+                    type="text"
+                    value={participantUrl}
+                    readOnly
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg bg-gray-50 dark:bg-gray-700 dark:text-white text-sm"
+                  />
+                  <button
+                    onClick={() => handleCopyLink(participantUrl)}
+                    className={`px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-r-lg transition-all duration-200 ${
+                      copyAnimation ? 'scale-95 bg-green-600' : ''
+                    }`}
+                  >
+                    {copyAnimation ? 'Copied!' : 'Copy'}
+                  </button>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Admin Dashboard (This Page)
-                  </label>
-                  <div className="flex">
-                    <input
-                      type="text"
-                      value={`${baseUrl}/admin/${eventId}`}
-                      readOnly
-                      className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg bg-gray-50 dark:bg-gray-700 dark:text-white"
-                    />
-                    <button
-                      onClick={() => navigator.clipboard.writeText(`${baseUrl}/admin/${eventId}`)}
-                      className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-r-lg"
-                    >
-                      Copy
-                    </button>
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Bookmark this link to manage your event
-                  </p>
-                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Share this link with participants to collect their availability
+                </p>
               </div>
             </div>
 
@@ -256,12 +290,9 @@ export default function AdminDashboard() {
                           {new Date(submission.submittedAt).toLocaleDateString()}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                        {submission.email}
+                      <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                        {submission.availability}
                       </p>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Available on {submission.availabilities.length} dates
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -334,11 +365,15 @@ export default function AdminDashboard() {
                   <span className="font-semibold text-gray-900 dark:text-white">{submissions.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-300">Event Duration</span>
+                  <span className="text-gray-600 dark:text-gray-300">Event Window</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
-                    {eventData?.windowStart && eventData?.windowEnd 
-                      ? Math.ceil((new Date(eventData.windowEnd).getTime() - new Date(eventData.windowStart).getTime()) / (1000 * 60 * 60 * 24))
-                      : 0} days
+                    {calculateEventWindow()} days
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-300">Window Dates</span>
+                  <span className="font-semibold text-gray-900 dark:text-white text-sm">
+                    {eventData?.windowStart} to {eventData?.windowEnd}
                   </span>
                 </div>
                 <div className="flex justify-between">
