@@ -159,31 +159,107 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Value Proposition Section */}
-        <div className="max-w-4xl mx-auto mb-16">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 md:p-12">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-              Beyond Simple &quot;Yes&quot; or &quot;No&quot; Scheduling
-            </h2>
-            
-            <div className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed space-y-6">
-              <p>
-                <strong className="text-gray-900 dark:text-white">Modern life is chaotic, but flexible.</strong> We&apos;re all busier than ever, yet we have more inherent flexibility than traditional scheduling tools can capture. Your calendar might be packed, but you know that certain meetings can be rescheduled, your spouse can handle pickup duty, or you could join virtually if needed.
-              </p>
+        {/* Brand Philosophy Section - Full Width */}
+        <div className="w-full bg-gray-100 dark:bg-gray-900 py-16 md:py-24 mt-16">
+          <div className="container mx-auto px-4">
+            <div className="max-w-6xl mx-auto">
               
-              <p>
-                Gone are the days where you can simply say &quot;yes&quot; or &quot;no&quot; to most time slots. Today&apos;s reality includes timezone juggling, personal commitments, recurring meetings that could be moved, and a thousand little preferences that matter when finding the perfect time for everyone.
-              </p>
-              
-              <p>
-                <strong className="text-blue-600">ScheduleBuddy embraces this complexity.</strong> Our AI-powered natural language approach lets participants share their real availability: <em>&quot;Evenings work best, but I can do mornings if it&apos;s important&quot;</em> or <em>&quot;I have a recurring call Fridays at 2pm, but it can be moved for this.&quot;</em>
-              </p>
-              
-              <p className="text-center bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg">
-                <strong className="text-blue-900 dark:text-blue-100">
-                  We encourage honesty and nuance, because the right time for your event is one that truly works for everyone.
-                </strong>
-              </p>
+              {/* Main Headline */}
+              <div className="text-center mb-16">
+                <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+                  &quot;Yes&quot; or &quot;no&quot; was never enough.
+                </h2>
+                <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
+                  Modern life is chaotic, but flexible. We&apos;re all busier than ever, yet we have more nuanced availability than traditional scheduling tools can capture.
+                </p>
+              </div>
+
+              {/* Side-by-side Comparison */}
+              <div className="grid md:grid-cols-2 gap-8 lg:gap-12 mb-16">
+                
+                {/* Traditional Scheduling */}
+                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-8 border-l-4 border-red-400">
+                  <h3 className="text-2xl font-bold text-red-800 dark:text-red-200 mb-4 flex items-center">
+                    <span className="mr-3">❌</span>
+                    Traditional Scheduling
+                  </h3>
+                  <div className="space-y-4 text-red-700 dark:text-red-300">
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded border">
+                      <p className="font-medium mb-2">Tuesday 2:00 PM</p>
+                      <div className="flex gap-2">
+                        <button className="px-3 py-1 bg-green-200 text-green-800 rounded text-sm">Available</button>
+                        <button className="px-3 py-1 bg-red-200 text-red-800 rounded text-sm">Busy</button>
+                      </div>
+                    </div>
+                    <p className="text-sm italic">
+                      &quot;I&apos;m marked as &apos;busy&apos; but I could actually move that meeting if this is important...&quot;
+                    </p>
+                  </div>
+                </div>
+
+                {/* ScheduleBuddy Approach */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-8 border-l-4 border-blue-400">
+                  <h3 className="text-2xl font-bold text-blue-800 dark:text-blue-200 mb-4 flex items-center">
+                    <span className="mr-3">✨</span>
+                    ScheduleBuddy
+                  </h3>
+                  <div className="space-y-4 text-blue-700 dark:text-blue-300">
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded border">
+                      <p className="font-medium mb-2">Your availability:</p>
+                      <textarea 
+                        className="w-full p-2 text-sm bg-gray-50 dark:bg-gray-700 rounded text-gray-800 dark:text-gray-200" 
+                        rows={3} 
+                        readOnly 
+                        value="Evenings work best, but I can do mornings if it's critical. I have a recurring call Fridays at 2pm, but it can be moved for this."
+                      />
+                    </div>
+                    <p className="text-sm italic">
+                      &quot;Finally, I can share my real availability with all the context that matters!&quot;
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stylized Quotes */}
+              <div className="grid md:grid-cols-3 gap-6 mb-12">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                  <div className="text-4xl mb-4">💬</div>
+                  <blockquote className="text-gray-700 dark:text-gray-300 italic">
+                    &quot;Weekday evenings after 6 PM work best, but I could do lunch if it&apos;s the only option&quot;
+                  </blockquote>
+                </div>
+                
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                  <div className="text-4xl mb-4">🌍</div>
+                  <blockquote className="text-gray-700 dark:text-gray-300 italic">
+                    &quot;I&apos;m in London so early mornings your time work great for me, just not Fridays&quot;
+                  </blockquote>
+                </div>
+                
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                  <div className="text-4xl mb-4">👨‍👩‍👧‍👦</div>
+                  <blockquote className="text-gray-700 dark:text-gray-300 italic">
+                    &quot;Ideally after 8pm when the kids are in bed, but my spouse can cover if it&apos;s urgent&quot;
+                  </blockquote>
+                </div>
+              </div>
+
+              {/* Bottom CTA */}
+              <div className="text-center bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-8 text-white">
+                <h3 className="text-2xl font-bold mb-4">
+                  We embrace complexity, because real life is complex.
+                </h3>
+                <p className="text-lg mb-6 opacity-90">
+                  The right time for your event is one that truly works for everyone — not just the first available slot.
+                </p>
+                <Link
+                  href="/create"
+                  className="inline-flex items-center bg-white text-blue-600 font-semibold py-3 px-8 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                >
+                  Start Scheduling Smarter
+                </Link>
+              </div>
+
             </div>
           </div>
         </div>
