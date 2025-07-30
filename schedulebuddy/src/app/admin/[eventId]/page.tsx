@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { getRecentEvents } from '@/lib/localStorage';
 
 interface EventData {
   id: string;
@@ -49,27 +50,18 @@ export default function AdminDashboard() {
   useEffect(() => {
     const loadEventData = async () => {
       try {
-        // First try to get from localStorage (if just created)
-        const recentEvents = JSON.parse(localStorage.getItem('recentEvents') || '[]') as Array<{
-          id: string;
-          name: string;
-          description?: string;
-          createdAt: string;
-        }>;
+        // Get from localStorage using the correct function
+        const recentEvents = getRecentEvents();
         const currentEvent = recentEvents.find(event => event.id === eventId);
         
         if (currentEvent) {
-          // Calculate window dates based on creation time
-          const createdDate = new Date(currentEvent.createdAt);
-          const windowStart = createdDate.toISOString().split('T')[0];
-          const windowEnd = new Date(createdDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-          
+          // Use actual event data from localStorage
           setEventData({
             id: eventId,
             name: currentEvent.name,
             description: currentEvent.description || '',
-            windowStart: windowStart,
-            windowEnd: windowEnd,
+            windowStart: new Date().toISOString().split('T')[0], // Will be improved with real dates
+            windowEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             createdAt: currentEvent.createdAt,
           });
         } else {

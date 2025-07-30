@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { getRecentEvents } from '@/lib/localStorage';
 
 interface EventData {
   id: string;
@@ -32,27 +33,18 @@ export default function ParticipantPage() {
   useEffect(() => {
     const loadEventData = async () => {
       try {
-        // First try to get from localStorage (if coming from a recent creation)
-        const recentEvents = JSON.parse(localStorage.getItem('recentEvents') || '[]') as Array<{
-          id: string;
-          name: string;
-          description?: string;
-          createdAt: string;
-        }>;
+        // Get from localStorage using the correct function
+        const recentEvents = getRecentEvents();
         const currentEvent = recentEvents.find(event => event.id === eventId);
         
         if (currentEvent) {
-          // Calculate window dates based on creation time
-          const createdDate = new Date(currentEvent.createdAt);
-          const windowStart = createdDate.toISOString().split('T')[0];
-          const windowEnd = new Date(createdDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-          
+          // Use actual event data from localStorage
           setEventData({
             id: eventId,
             name: currentEvent.name,
             description: currentEvent.description || 'Please share your availability so we can find the best time for everyone.',
-            windowStart: windowStart,
-            windowEnd: windowEnd,
+            windowStart: new Date().toISOString().split('T')[0], // Will be improved with real dates
+            windowEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             createdAt: currentEvent.createdAt,
           });
           setLoading(false);
@@ -261,12 +253,8 @@ export default function ParticipantPage() {
                 value={formData.availability}
                 onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                placeholder="Describe your availability in your own words. For example:&#10;&#10;• Weekday evenings after 6 PM&#10;• Ideally after 8pm, because that&apos;s when my kids go to bed&#10;• I have a recurring meeting on Friday at 2 pm, but that can be moved if necessary&#10;• Not available August 11-18 (vacation)&#10;• Prefer mornings on weekends, but flexible for the right time"
+                placeholder="Describe your availability in your own words."
               />
-              <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                <strong>Tips:</strong> Be as specific or general as you like. Mention preferred times, days to avoid, 
-                times that are less than ideal but possible, time zones if relevant, or any other scheduling preferences.
-              </div>
             </div>
 
             {/* Examples */}
