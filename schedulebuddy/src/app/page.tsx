@@ -13,14 +13,14 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-16">
         {/* Hero Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl sm:text-6xl font-bold text-gray-900 dark:text-white mb-6">
             Schedule<span className="text-blue-600">Buddy</span>
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-            The smart way to coordinate group meetings. Collect availability from everyone and get AI-powered recommendations for the best meeting times.
+            The smart way to coordinate events and meetings. Collect availability from everyone and get AI-powered recommendations for the best meeting times.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -154,6 +154,35 @@ export default function Home() {
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
                 Track responses in real-time with a comprehensive admin dashboard showing all submissions and analytics.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Value Proposition Section */}
+        <div className="max-w-4xl mx-auto mb-16">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 md:p-12">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+              Beyond Simple &quot;Yes&quot; or &quot;No&quot; Scheduling
+            </h2>
+            
+            <div className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed space-y-6">
+              <p>
+                <strong className="text-gray-900 dark:text-white">Modern life is chaotic, but flexible.</strong> We&apos;re all busier than ever, yet we have more inherent flexibility than traditional scheduling tools can capture. Your calendar might be packed, but you know that certain meetings can be rescheduled, your spouse can handle pickup duty, or you could join virtually if needed.
+              </p>
+              
+              <p>
+                Gone are the days where you can simply say &quot;yes&quot; or &quot;no&quot; to most time slots. Today&apos;s reality includes timezone juggling, personal commitments, recurring meetings that could be moved, and a thousand little preferences that matter when finding the perfect time for everyone.
+              </p>
+              
+              <p>
+                <strong className="text-blue-600">ScheduleBuddy embraces this complexity.</strong> Our AI-powered natural language approach lets participants share their real availability: <em>&quot;Evenings work best, but I can do mornings if it&apos;s important&quot;</em> or <em>&quot;I have a recurring call Fridays at 2pm, but it can be moved for this.&quot;</em>
+              </p>
+              
+              <p className="text-center bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg">
+                <strong className="text-blue-900 dark:text-blue-100">
+                  We encourage honesty and nuance, because the right time for your event is one that truly works for everyone.
+                </strong>
               </p>
             </div>
           </div>
