@@ -60,18 +60,43 @@ export default function AdminDashboard() {
             id: eventId,
             name: currentEvent.name,
             description: currentEvent.description || '',
-            windowStart: new Date().toISOString().split('T')[0], // Will be improved with real dates
-            windowEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            windowStart: currentEvent.windowStart || new Date().toISOString().split('T')[0],
+            windowEnd: currentEvent.windowEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             createdAt: currentEvent.createdAt,
           });
         } else {
           // Generate a more realistic demo event based on eventId (same as participant page)
           const demoEvents = [
-            { name: 'Team Meeting', description: 'Weekly team sync to discuss project updates and plan next steps' },
-            { name: 'Fantasy Football Draft', description: 'Annual draft for our fantasy football league - let\'s find a time that works for everyone!' },
-            { name: 'Book Club Discussion', description: 'Discussion of this month\'s book selection. We\'ll need about 2 hours.' },
-            { name: 'Project Planning Session', description: 'Planning session for the Q4 project launch. All stakeholders should attend.' },
-            { name: 'Family Dinner', description: 'Monthly family gathering - looking for a weekend that works for everyone.' }
+            { 
+              name: 'Team Meeting', 
+              description: 'Weekly team sync to discuss project updates and plan next steps',
+              windowStart: '2025-01-27',
+              windowEnd: '2025-02-03'
+            },
+            { 
+              name: 'Fantasy Football Draft', 
+              description: 'Annual draft for our fantasy football league - let\'s find a time that works for everyone!',
+              windowStart: '2025-01-28',
+              windowEnd: '2025-02-05'
+            },
+            { 
+              name: 'Book Club Discussion', 
+              description: 'Discussion of this month\'s book selection. We\'ll need about 2 hours.',
+              windowStart: '2025-01-29',
+              windowEnd: '2025-02-10'
+            },
+            { 
+              name: 'Project Planning Session', 
+              description: 'Planning session for the Q4 project launch. All stakeholders should attend.',
+              windowStart: '2025-01-30',
+              windowEnd: '2025-02-07'
+            },
+            { 
+              name: 'Family Dinner', 
+              description: 'Monthly family gathering - looking for a weekend that works for everyone.',
+              windowStart: '2025-02-01',
+              windowEnd: '2025-02-15'
+            }
           ];
           
           // Use eventId to pick a consistent demo event
@@ -82,8 +107,8 @@ export default function AdminDashboard() {
             id: eventId,
             name: selectedDemo.name,
             description: selectedDemo.description,
-            windowStart: new Date().toISOString().split('T')[0],
-            windowEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            windowStart: selectedDemo.windowStart,
+            windowEnd: selectedDemo.windowEnd,
             createdAt: new Date().toISOString(),
           });
         }

@@ -52,6 +52,8 @@ export default function CreateEvent() {
         id: result.eventId,
         name: formData.eventName,
         description: formData.description,
+        windowStart: formData.windowStart,
+        windowEnd: formData.windowEnd,
         createdAt: new Date().toISOString(),
         adminUrl: result.adminUrl
       });

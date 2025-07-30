@@ -4,6 +4,8 @@ export interface RecentEvent {
   id: string;
   name: string;
   description?: string;
+  windowStart?: string;
+  windowEnd?: string;
   createdAt: string;
   adminUrl: string;
 }

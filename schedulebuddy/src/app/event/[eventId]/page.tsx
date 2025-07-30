@@ -29,6 +29,25 @@ export default function ParticipantPage() {
     availability: ''
   });
 
+  // Format date for display (e.g., "July 29th")
+  const formatDateShort = (dateString: string): string => {
+    const date = new Date(dateString + 'T00:00:00');
+    const options: Intl.DateTimeFormatOptions = { 
+      month: 'long', 
+      day: 'numeric'
+    };
+    const formatted = date.toLocaleDateString('en-US', options);
+    
+    // Add ordinal suffix
+    const day = date.getDate();
+    let suffix = 'th';
+    if (day % 10 === 1 && day !== 11) suffix = 'st';
+    else if (day % 10 === 2 && day !== 12) suffix = 'nd';
+    else if (day % 10 === 3 && day !== 13) suffix = 'rd';
+    
+    return formatted.replace(/\d+/, day + suffix);
+  };
+
   // Get event data - try localStorage first, then fallback
   useEffect(() => {
     const loadEventData = async () => {
@@ -43,8 +62,8 @@ export default function ParticipantPage() {
             id: eventId,
             name: currentEvent.name,
             description: currentEvent.description || 'Please share your availability so we can find the best time for everyone.',
-            windowStart: new Date().toISOString().split('T')[0], // Will be improved with real dates
-            windowEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            windowStart: currentEvent.windowStart || new Date().toISOString().split('T')[0],
+            windowEnd: currentEvent.windowEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             createdAt: currentEvent.createdAt,
           });
           setLoading(false);
@@ -57,11 +76,36 @@ export default function ParticipantPage() {
         
         // Generate a more realistic demo event based on eventId
         const demoEvents = [
-          { name: 'Team Meeting', description: 'Weekly team sync to discuss project updates and plan next steps' },
-          { name: 'Fantasy Football Draft', description: 'Annual draft for our fantasy football league - let\'s find a time that works for everyone!' },
-          { name: 'Book Club Discussion', description: 'Discussion of this month\'s book selection. We\'ll need about 2 hours.' },
-          { name: 'Project Planning Session', description: 'Planning session for the Q4 project launch. All stakeholders should attend.' },
-          { name: 'Family Dinner', description: 'Monthly family gathering - looking for a weekend that works for everyone.' }
+          { 
+            name: 'Team Meeting', 
+            description: 'Weekly team sync to discuss project updates and plan next steps',
+            windowStart: '2025-01-27',
+            windowEnd: '2025-02-03'
+          },
+          { 
+            name: 'Fantasy Football Draft', 
+            description: 'Annual draft for our fantasy football league - let\'s find a time that works for everyone!',
+            windowStart: '2025-01-28',
+            windowEnd: '2025-02-05'
+          },
+          { 
+            name: 'Book Club Discussion', 
+            description: 'Discussion of this month\'s book selection. We\'ll need about 2 hours.',
+            windowStart: '2025-01-29',
+            windowEnd: '2025-02-10'
+          },
+          { 
+            name: 'Project Planning Session', 
+            description: 'Planning session for the Q4 project launch. All stakeholders should attend.',
+            windowStart: '2025-01-30',
+            windowEnd: '2025-02-07'
+          },
+          { 
+            name: 'Family Dinner', 
+            description: 'Monthly family gathering - looking for a weekend that works for everyone.',
+            windowStart: '2025-02-01',
+            windowEnd: '2025-02-15'
+          }
         ];
         
         // Use eventId to pick a consistent demo event
@@ -72,8 +116,8 @@ export default function ParticipantPage() {
           id: eventId,
           name: selectedDemo.name,
           description: selectedDemo.description,
-          windowStart: new Date().toISOString().split('T')[0],
-          windowEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          windowStart: selectedDemo.windowStart,
+          windowEnd: selectedDemo.windowEnd,
           createdAt: new Date().toISOString(),
         });
         setLoading(false);
@@ -125,16 +169,6 @@ export default function ParticipantPage() {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
   };
 
   if (loading) {
@@ -205,7 +239,7 @@ export default function ParticipantPage() {
             </p>
           )}
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            Scheduling window: {eventData?.windowStart && formatDate(eventData.windowStart)} to {eventData?.windowEnd && formatDate(eventData.windowEnd)}
+            Scheduling window: {eventData?.windowStart && formatDateShort(eventData.windowStart)} to {eventData?.windowEnd && formatDateShort(eventData.windowEnd)}
           </div>
         </div>
 
@@ -244,7 +278,7 @@ export default function ParticipantPage() {
             {/* Availability Text Area */}
             <div className="mb-6">
               <label htmlFor="availability" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                When are you available? *
+                When are you available? * (Between {eventData?.windowStart && formatDateShort(eventData.windowStart)} and {eventData?.windowEnd && formatDateShort(eventData.windowEnd)})
               </label>
               <textarea
                 id="availability"
