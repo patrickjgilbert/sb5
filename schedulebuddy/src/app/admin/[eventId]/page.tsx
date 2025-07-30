@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { getRecentEvents } from '@/lib/localStorage';
+import { getRecentEvents, getSubmissionsByEventId, type Submission as LocalSubmission } from '@/lib/localStorage';
 
 interface EventData {
   id: string;
@@ -189,8 +189,22 @@ export default function AdminDashboard() {
         });
       }
 
-      // For localStorage mode, we don't have submissions
-      setSubmissions([]);
+      // Load submissions from localStorage
+      const localSubmissions = getSubmissionsByEventId(eventId);
+      console.log(`Found ${localSubmissions.length} submissions in localStorage for event ${eventId}`);
+      
+      if (localSubmissions.length > 0) {
+        const formattedSubmissions = localSubmissions.map((submission: LocalSubmission) => ({
+          id: submission.id,
+          name: submission.name,
+          availability: submission.availability,
+          submittedAt: submission.submittedAt
+        }));
+        setSubmissions(formattedSubmissions);
+      } else {
+        setSubmissions([]);
+      }
+      
       setLoading(false);
     };
 

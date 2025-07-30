@@ -10,7 +10,16 @@ export interface RecentEvent {
   adminUrl: string;
 }
 
+export interface Submission {
+  id: string;
+  eventId: string;
+  name: string;
+  availability: string;
+  submittedAt: string;
+}
+
 const STORAGE_KEY = 'schedulebuddy_recent_events';
+const SUBMISSIONS_KEY = 'schedulebuddy_submissions';
 const MAX_RECENT_EVENTS = 5;
 
 export const addRecentEvent = (event: RecentEvent): void => {
@@ -85,5 +94,46 @@ export const clearRecentEvents = (): void => {
     localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
     console.warn('Failed to clear recent events:', error);
+  }
+};
+
+// Submission management functions
+export const addSubmission = (submission: Submission): void => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const existing = getSubmissions();
+    const updated = [submission, ...existing];
+    localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(updated));
+    console.log('Submission saved to localStorage:', submission);
+  } catch (error) {
+    console.warn('Failed to save submission:', error);
+  }
+};
+
+export const getSubmissions = (): Submission[] => {
+  if (typeof window === 'undefined') return [];
+  
+  try {
+    const stored = localStorage.getItem(SUBMISSIONS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.warn('Failed to load submissions:', error);
+    return [];
+  }
+};
+
+export const getSubmissionsByEventId = (eventId: string): Submission[] => {
+  const allSubmissions = getSubmissions();
+  return allSubmissions.filter(submission => submission.eventId === eventId);
+};
+
+export const clearSubmissions = (): void => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.removeItem(SUBMISSIONS_KEY);
+  } catch (error) {
+    console.warn('Failed to clear submissions:', error);
   }
 }; 
