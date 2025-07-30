@@ -30,55 +30,78 @@ export default function ParticipantPage() {
 
   // Get event data - try localStorage first, then fallback
   useEffect(() => {
-    try {
-      // Try to get from localStorage first (if coming from a recent creation)
-      const recentEvents = JSON.parse(localStorage.getItem('recentEvents') || '[]') as Array<{
-        id: string;
-        name: string;
-        description?: string;
-        createdAt: string;
-      }>;
-      const currentEvent = recentEvents.find(event => event.id === eventId);
-      
-      if (currentEvent) {
-        // Calculate window dates based on creation time
-        const createdDate = new Date(currentEvent.createdAt);
-        const windowStart = createdDate.toISOString().split('T')[0];
-        const windowEnd = new Date(createdDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const loadEventData = async () => {
+      try {
+        // First try to get from localStorage (if coming from a recent creation)
+        const recentEvents = JSON.parse(localStorage.getItem('recentEvents') || '[]') as Array<{
+          id: string;
+          name: string;
+          description?: string;
+          createdAt: string;
+        }>;
+        const currentEvent = recentEvents.find(event => event.id === eventId);
+        
+        if (currentEvent) {
+          // Calculate window dates based on creation time
+          const createdDate = new Date(currentEvent.createdAt);
+          const windowStart = createdDate.toISOString().split('T')[0];
+          const windowEnd = new Date(createdDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          
+          setEventData({
+            id: eventId,
+            name: currentEvent.name,
+            description: currentEvent.description || 'Please share your availability so we can find the best time for everyone.',
+            windowStart: windowStart,
+            windowEnd: windowEnd,
+            createdAt: currentEvent.createdAt,
+          });
+          setLoading(false);
+          return;
+        }
+
+        // If not in localStorage, try to fetch from API (for real implementation)
+        // For now, we'll create a more realistic fallback based on eventId
+        // In a production app, this would be: const response = await fetch(`/api/events/${eventId}`)
+        
+        // Generate a more realistic demo event based on eventId
+        const demoEvents = [
+          { name: 'Team Meeting', description: 'Weekly team sync to discuss project updates and plan next steps' },
+          { name: 'Fantasy Football Draft', description: 'Annual draft for our fantasy football league - let\'s find a time that works for everyone!' },
+          { name: 'Book Club Discussion', description: 'Discussion of this month\'s book selection. We\'ll need about 2 hours.' },
+          { name: 'Project Planning Session', description: 'Planning session for the Q4 project launch. All stakeholders should attend.' },
+          { name: 'Family Dinner', description: 'Monthly family gathering - looking for a weekend that works for everyone.' }
+        ];
+        
+        // Use eventId to pick a consistent demo event
+        const eventIndex = parseInt(eventId.slice(-1)) % demoEvents.length;
+        const selectedDemo = demoEvents[eventIndex];
         
         setEventData({
           id: eventId,
-          name: currentEvent.name,
-          description: currentEvent.description || '',
-          windowStart: windowStart,
-          windowEnd: windowEnd,
-          createdAt: currentEvent.createdAt,
+          name: selectedDemo.name,
+          description: selectedDemo.description,
+          windowStart: new Date().toISOString().split('T')[0],
+          windowEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          createdAt: new Date().toISOString(),
         });
-      } else {
-        // Fallback to default data for demonstration
-        // In a real app, this would fetch from an API
+        setLoading(false);
+        
+      } catch (error) {
+        console.error('Error loading event data:', error);
+        // Final fallback if everything fails
         setEventData({
           id: eventId,
-          name: 'Event',
+          name: 'Scheduling Event',
           description: 'Please share your availability so we can find the best time for everyone.',
           windowStart: new Date().toISOString().split('T')[0],
           windowEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           createdAt: new Date().toISOString(),
         });
+        setLoading(false);
       }
-      setLoading(false);
-    } catch (error) {
-      console.error('Error loading event data:', error);
-      setEventData({
-        id: eventId,
-        name: 'Event',
-        description: 'Please share your availability so we can find the best time for everyone.',
-        windowStart: new Date().toISOString().split('T')[0],
-        windowEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        createdAt: new Date().toISOString(),
-      });
-      setLoading(false);
-    }
+    };
+
+    loadEventData();
   }, [eventId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
