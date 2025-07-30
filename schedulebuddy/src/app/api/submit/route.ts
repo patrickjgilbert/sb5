@@ -19,11 +19,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For development/demo purposes, we'll bypass the database and just return success
-    // In a production environment, you would uncomment the Supabase code below
-    
-    /* 
-    // Production Supabase code (commented out for demo):
+    // Save submission to Supabase
     const { supabase } = await import('@/lib/supabase');
     
     // Check if event exists
@@ -50,21 +46,12 @@ export async function POST(request: NextRequest) {
       });
 
     if (submitError) {
-      console.error('Supabase error:', submitError);
+      console.error('Supabase submit error:', submitError);
       return NextResponse.json(
         { error: 'Failed to submit response' },
         { status: 500 }
       );
     }
-    */
-
-    // For now, we'll simulate successful submission
-    console.log('Response submitted (demo mode):', {
-      eventId,
-      name,
-      availability,
-      submittedAt: new Date().toISOString()
-    });
 
     return NextResponse.json({
       success: true,

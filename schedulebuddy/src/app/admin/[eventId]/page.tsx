@@ -46,76 +46,110 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [copyAnimation, setCopyAnimation] = useState(false);
 
-  // Get event data from localStorage (where it was stored after creation)
+  // Load event data and submissions
   useEffect(() => {
     const loadEventData = async () => {
       try {
-        // Get from localStorage using the correct function
-        const recentEvents = getRecentEvents();
-        const currentEvent = recentEvents.find(event => event.id === eventId);
+        // First, try to fetch from Supabase
+        const { supabase } = await import('@/lib/supabase');
         
-        if (currentEvent) {
-          // Use actual event data from localStorage
+        // Fetch event details
+        const { data: eventDetails, error: eventError } = await supabase
+          .from('events')
+          .select('*')
+          .eq('id', eventId)
+          .single();
+
+        if (eventDetails && !eventError) {
+          // Use real event data from Supabase
           setEventData({
             id: eventId,
-            name: currentEvent.name,
-            description: currentEvent.description || '',
-            windowStart: currentEvent.windowStart || new Date().toISOString().split('T')[0],
-            windowEnd: currentEvent.windowEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            createdAt: currentEvent.createdAt,
+            name: eventDetails.event_name,
+            description: eventDetails.description || '',
+            windowStart: eventDetails.window_start,
+            windowEnd: eventDetails.window_end,
+            createdAt: eventDetails.created_at,
           });
+
+          // Fetch responses
+          const { data: responses, error: responsesError } = await supabase
+            .from('responses')
+            .select('*')
+            .eq('event_id', eventId)
+            .order('created_at', { ascending: false });
+
+          if (!responsesError && responses) {
+            const formattedSubmissions = responses.map(response => ({
+              id: response.id.toString(),
+              name: response.participant_name,
+              availability: response.availability,
+              submittedAt: response.created_at
+            }));
+            setSubmissions(formattedSubmissions);
+          }
         } else {
-          // Generate a more realistic demo event based on eventId (same as participant page)
-          const demoEvents = [
-            { 
-              name: 'Team Meeting', 
-              description: 'Weekly team sync to discuss project updates and plan next steps',
-              windowStart: '2025-01-27',
-              windowEnd: '2025-02-03'
-            },
-            { 
-              name: 'Fantasy Football Draft', 
-              description: 'Annual draft for our fantasy football league - let\'s find a time that works for everyone!',
-              windowStart: '2025-01-28',
-              windowEnd: '2025-02-05'
-            },
-            { 
-              name: 'Book Club Discussion', 
-              description: 'Discussion of this month\'s book selection. We\'ll need about 2 hours.',
-              windowStart: '2025-01-29',
-              windowEnd: '2025-02-10'
-            },
-            { 
-              name: 'Project Planning Session', 
-              description: 'Planning session for the Q4 project launch. All stakeholders should attend.',
-              windowStart: '2025-01-30',
-              windowEnd: '2025-02-07'
-            },
-            { 
-              name: 'Family Dinner', 
-              description: 'Monthly family gathering - looking for a weekend that works for everyone.',
-              windowStart: '2025-02-01',
-              windowEnd: '2025-02-15'
-            }
-          ];
+          // Fallback to localStorage or demo data
+          const recentEvents = getRecentEvents();
+          const currentEvent = recentEvents.find(event => event.id === eventId);
           
-          // Use eventId to pick a consistent demo event
-          const eventIndex = parseInt(eventId.slice(-1)) % demoEvents.length;
-          const selectedDemo = demoEvents[eventIndex];
-          
-          setEventData({
-            id: eventId,
-            name: selectedDemo.name,
-            description: selectedDemo.description,
-            windowStart: selectedDemo.windowStart,
-            windowEnd: selectedDemo.windowEnd,
-            createdAt: new Date().toISOString(),
-          });
+          if (currentEvent) {
+            setEventData({
+              id: eventId,
+              name: currentEvent.name,
+              description: currentEvent.description || '',
+              windowStart: currentEvent.windowStart || new Date().toISOString().split('T')[0],
+              windowEnd: currentEvent.windowEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              createdAt: currentEvent.createdAt,
+            });
+          } else {
+            // Generate demo event based on eventId
+            const demoEvents = [
+              { 
+                name: 'Team Meeting', 
+                description: 'Weekly team sync to discuss project updates and plan next steps',
+                windowStart: '2025-01-27',
+                windowEnd: '2025-02-03'
+              },
+              { 
+                name: 'Fantasy Football Draft', 
+                description: 'Annual draft for our fantasy football league - let\'s find a time that works for everyone!',
+                windowStart: '2025-01-28',
+                windowEnd: '2025-02-05'
+              },
+              { 
+                name: 'Book Club Discussion', 
+                description: 'Discussion of this month\'s book selection. We\'ll need about 2 hours.',
+                windowStart: '2025-01-29',
+                windowEnd: '2025-02-10'
+              },
+              { 
+                name: 'Project Planning Session', 
+                description: 'Planning session for the Q4 project launch. All stakeholders should attend.',
+                windowStart: '2025-01-30',
+                windowEnd: '2025-02-07'
+              },
+              { 
+                name: 'Family Dinner', 
+                description: 'Monthly family gathering - looking for a weekend that works for everyone.',
+                windowStart: '2025-02-01',
+                windowEnd: '2025-02-15'
+              }
+            ];
+            
+            const eventIndex = parseInt(eventId.slice(-1)) % demoEvents.length;
+            const selectedDemo = demoEvents[eventIndex];
+            
+            setEventData({
+              id: eventId,
+              name: selectedDemo.name,
+              description: selectedDemo.description,
+              windowStart: selectedDemo.windowStart,
+              windowEnd: selectedDemo.windowEnd,
+              createdAt: new Date().toISOString(),
+            });
+          }
         }
 
-        // TODO: In a real app, also fetch submissions from API
-        // For now, using empty array
-        setSubmissions([]);
         setLoading(false);
       } catch (error) {
         console.error('Error loading event data:', error);
@@ -317,21 +351,54 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {submissions.map((submission) => (
-                    <div key={submission.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">
-                          {submission.name}
-                        </h3>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {new Date(submission.submittedAt).toLocaleDateString()}
-                        </span>
+                  {submissions.map((submission, index) => (
+                    <div key={submission.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 font-semibold">
+                            {submission.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
+                              {submission.name}
+                            </h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              Participant #{index + 1}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {new Date(submission.submittedAt).toLocaleDateString()}
+                          </span>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">
+                            {new Date(submission.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
-                        {submission.availability}
-                      </p>
+                      
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border-l-4 border-blue-400">
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Availability Response:
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                          {submission.availability}
+                        </p>
+                      </div>
                     </div>
                   ))}
+                  
+                  {/* Summary Footer */}
+                  <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+                      <span>
+                        📊 {submissions.length} response{submissions.length !== 1 ? 's' : ''} collected
+                      </span>
+                      <span>
+                        🕒 Last updated: {submissions.length > 0 ? new Date(submissions[0].submittedAt).toLocaleString() : 'Never'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

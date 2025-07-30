@@ -28,11 +28,7 @@ export async function POST(request: NextRequest) {
     // Generate a simple 10-digit event ID
     const eventId = generateEventId();
 
-    // For development/demo purposes, we'll bypass the database and just return success
-    // In a production environment, you would uncomment the Supabase code below
-    
-    /* 
-    // Production Supabase code (commented out for demo):
+    // Save event to Supabase
     const { supabase } = await import('@/lib/supabase');
     const { error } = await supabase
       .from('events')
@@ -51,16 +47,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-    */
-
-    // For now, we'll simulate successful creation
-    console.log('Event created (demo mode):', {
-      id: eventId,
-      name: eventName,
-      description,
-      windowStart,
-      windowEnd
-    });
 
     // Generate relative URLs (work on any domain)
     const adminUrl = `/admin/${eventId}`;
