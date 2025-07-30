@@ -8,6 +8,11 @@ interface CreateEventRequest {
   windowEnd: string;
 }
 
+// Generate a 10-digit random number
+function generateEventId(): string {
+  return Math.floor(1000000000 + Math.random() * 9000000000).toString();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: CreateEventRequest = await request.json();
@@ -21,10 +26,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create event in Supabase
-    const { data: event, error } = await supabase
+    // Generate a simple 10-digit event ID
+    const eventId = generateEventId();
+
+    // Create event in Supabase with custom ID
+    const { error } = await supabase
       .from('events')
       .insert({
+        id: eventId,
         event_name: eventName,
         description: description || null,
         window_start: windowStart,
@@ -43,7 +52,6 @@ export async function POST(request: NextRequest) {
 
     // Generate URLs
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const eventId = event.id;
     const adminUrl = `${baseUrl}/admin/${eventId}`;
     const formUrl = `${baseUrl}/event/${eventId}`;
 

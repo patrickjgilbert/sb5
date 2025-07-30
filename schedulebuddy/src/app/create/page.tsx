@@ -135,7 +135,7 @@ export default function CreateEvent() {
                 value={formData.description}
                 onChange={handleInputChange}
                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                placeholder="Provide context to help participants give better availability responses. For example:&#10;&#10;• Will this need to be during weekday business hours or can it be evenings/weekends?&#10;• How long will the meeting be?&#10;• Any specific preferences or constraints?&#10;• Is this urgent or can it wait for optimal timing?"
+                placeholder="Provide context to help participants give better availability responses."
               />
               <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 <strong>💡 Pro tip:</strong> Include timing preferences (weekdays vs weekends, business hours vs evenings) 

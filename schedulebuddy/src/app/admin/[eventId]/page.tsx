@@ -139,12 +139,16 @@ export default function AdminDashboard() {
     });
   };
 
-  const calculateEventWindow = () => {
-    if (!eventData?.windowStart || !eventData?.windowEnd) return 0;
-    const start = new Date(eventData.windowStart);
-    const end = new Date(eventData.windowEnd);
-    return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  const formatDateShort = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric' 
+    });
   };
+
+
 
   if (loading) {
     return (
@@ -366,18 +370,15 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-300">Event Window</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {calculateEventWindow()} days
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-300">Window Dates</span>
                   <span className="font-semibold text-gray-900 dark:text-white text-sm">
-                    {eventData?.windowStart} to {eventData?.windowEnd}
+                    {eventData?.windowStart && eventData?.windowEnd 
+                      ? `${formatDateShort(eventData.windowStart)} to ${formatDateShort(eventData.windowEnd)}`
+                      : 'Not set'
+                    }
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-300">Created</span>
+                  <span className="text-gray-600 dark:text-gray-300">Event Form Created Date</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
                     {eventData?.createdAt ? new Date(eventData.createdAt).toLocaleDateString() : 'Unknown'}
                   </span>
