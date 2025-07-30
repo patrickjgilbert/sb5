@@ -62,10 +62,9 @@ export async function POST(request: NextRequest) {
       windowEnd
     });
 
-    // Generate URLs
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const adminUrl = `${baseUrl}/admin/${eventId}`;
-    const formUrl = `${baseUrl}/event/${eventId}`;
+    // Generate relative URLs (work on any domain)
+    const adminUrl = `/admin/${eventId}`;
+    const formUrl = `/event/${eventId}`;
 
     return NextResponse.json({
       success: true,

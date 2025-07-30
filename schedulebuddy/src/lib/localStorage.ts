@@ -36,10 +36,33 @@ export const getRecentEvents = (): RecentEvent[] => {
   
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    const events = stored ? JSON.parse(stored) : [];
+    
+    // Normalize admin URLs to relative paths for domain compatibility
+    return events.map((event: RecentEvent) => ({
+      ...event,
+      adminUrl: normalizeAdminUrl(event.adminUrl)
+    }));
   } catch (error) {
     console.warn('Failed to load recent events:', error);
     return [];
+  }
+};
+
+// Helper function to convert absolute URLs to relative paths
+const normalizeAdminUrl = (adminUrl: string): string => {
+  try {
+    // If it's already a relative path, return as-is
+    if (adminUrl.startsWith('/')) {
+      return adminUrl;
+    }
+    
+    // If it's an absolute URL, extract the path
+    const url = new URL(adminUrl);
+    return url.pathname;
+  } catch {
+    // If URL parsing fails, assume it's already relative
+    return adminUrl;
   }
 };
 
