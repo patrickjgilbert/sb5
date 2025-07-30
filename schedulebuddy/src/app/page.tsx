@@ -109,7 +109,7 @@ export default function Home() {
                 Get AI Recommendations
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Let AI analyze everyone's schedules and suggest the best meeting times.
+                Let AI analyze everyone&apos;s schedules and suggest the best meeting times.
               </p>
             </div>
           </div>
@@ -126,7 +126,7 @@ export default function Home() {
                 🤖 AI-Powered Scheduling
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Our intelligent algorithm analyzes everyone's availability and suggests optimal meeting times that work for the most people.
+                Our intelligent algorithm analyzes everyone&apos;s availability and suggests optimal meeting times that work for the most people.
               </p>
             </div>
             

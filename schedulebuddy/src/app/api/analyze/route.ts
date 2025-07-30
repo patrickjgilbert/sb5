@@ -12,15 +12,7 @@ interface Suggestion {
   notes: string;
 }
 
-interface AnalysisResult {
-  suggestions: Suggestion[];
-  participantCount: number;
-  lastUpdated: string;
-  summary: string;
-  challenges: string;
-  recommendations: string[];
-  message?: string;
-}
+
 
 export async function POST(request: NextRequest) {
   try {
