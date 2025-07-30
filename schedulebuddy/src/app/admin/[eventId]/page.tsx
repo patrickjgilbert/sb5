@@ -30,6 +30,9 @@ interface AnalysisResult {
   }>;
   summary: string;
   participantCount: number;
+  challenges?: string;
+  recommendations: string[];
+  lastUpdated: string;
 }
 
 export default function AdminDashboard() {
@@ -50,8 +53,19 @@ export default function AdminDashboard() {
   useEffect(() => {
     const loadEventData = async () => {
       try {
-        // First, try to fetch from Supabase
+        console.log('Loading event data for eventId:', eventId);
+        
+        // Check if Supabase is configured
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          console.log('Supabase environment variables not found, using localStorage fallback');
+          // Fallback to localStorage
+          loadFromLocalStorage();
+          return;
+        }
+
+        // Try to fetch from Supabase
         const { supabase } = await import('@/lib/supabase');
+        console.log('Attempting to fetch from Supabase...');
         
         // Fetch event details
         const { data: eventDetails, error: eventError } = await supabase
@@ -60,7 +74,10 @@ export default function AdminDashboard() {
           .eq('id', eventId)
           .single();
 
+        console.log('Supabase event query result:', { eventDetails, eventError });
+
         if (eventDetails && !eventError) {
+          console.log('Found event in Supabase:', eventDetails);
           // Use real event data from Supabase
           setEventData({
             id: eventId,
@@ -72,13 +89,17 @@ export default function AdminDashboard() {
           });
 
           // Fetch responses
+          console.log('Fetching responses from Supabase...');
           const { data: responses, error: responsesError } = await supabase
             .from('responses')
             .select('*')
             .eq('event_id', eventId)
             .order('created_at', { ascending: false });
 
+          console.log('Supabase responses query result:', { responses, responsesError });
+
           if (!responsesError && responses) {
+            console.log(`Found ${responses.length} responses in Supabase`);
             const formattedSubmissions = responses.map(response => ({
               id: response.id.toString(),
               name: response.participant_name,
@@ -86,80 +107,127 @@ export default function AdminDashboard() {
               submittedAt: response.created_at
             }));
             setSubmissions(formattedSubmissions);
+          } else {
+            console.log('No responses found or error fetching responses:', responsesError);
+            setSubmissions([]);
           }
         } else {
-          // Fallback to localStorage or demo data
-          const recentEvents = getRecentEvents();
-          const currentEvent = recentEvents.find(event => event.id === eventId);
-          
-          if (currentEvent) {
-            setEventData({
-              id: eventId,
-              name: currentEvent.name,
-              description: currentEvent.description || '',
-              windowStart: currentEvent.windowStart || new Date().toISOString().split('T')[0],
-              windowEnd: currentEvent.windowEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-              createdAt: currentEvent.createdAt,
-            });
-          } else {
-            // Generate demo event based on eventId
-            const demoEvents = [
-              { 
-                name: 'Team Meeting', 
-                description: 'Weekly team sync to discuss project updates and plan next steps',
-                windowStart: '2025-01-27',
-                windowEnd: '2025-02-03'
-              },
-              { 
-                name: 'Fantasy Football Draft', 
-                description: 'Annual draft for our fantasy football league - let\'s find a time that works for everyone!',
-                windowStart: '2025-01-28',
-                windowEnd: '2025-02-05'
-              },
-              { 
-                name: 'Book Club Discussion', 
-                description: 'Discussion of this month\'s book selection. We\'ll need about 2 hours.',
-                windowStart: '2025-01-29',
-                windowEnd: '2025-02-10'
-              },
-              { 
-                name: 'Project Planning Session', 
-                description: 'Planning session for the Q4 project launch. All stakeholders should attend.',
-                windowStart: '2025-01-30',
-                windowEnd: '2025-02-07'
-              },
-              { 
-                name: 'Family Dinner', 
-                description: 'Monthly family gathering - looking for a weekend that works for everyone.',
-                windowStart: '2025-02-01',
-                windowEnd: '2025-02-15'
-              }
-            ];
-            
-            const eventIndex = parseInt(eventId.slice(-1)) % demoEvents.length;
-            const selectedDemo = demoEvents[eventIndex];
-            
-            setEventData({
-              id: eventId,
-              name: selectedDemo.name,
-              description: selectedDemo.description,
-              windowStart: selectedDemo.windowStart,
-              windowEnd: selectedDemo.windowEnd,
-              createdAt: new Date().toISOString(),
-            });
-          }
+          console.log('Event not found in Supabase, using localStorage fallback');
+          loadFromLocalStorage();
         }
 
         setLoading(false);
       } catch (error) {
-        console.error('Error loading event data:', error);
-        setError('Failed to load event data');
-        setLoading(false);
+        console.error('Error loading event data from Supabase:', error);
+        console.log('Falling back to localStorage');
+        loadFromLocalStorage();
       }
+    };
+
+    const loadFromLocalStorage = () => {
+      console.log('Loading from localStorage...');
+      // Fallback to localStorage or demo data
+      const recentEvents = getRecentEvents();
+      const currentEvent = recentEvents.find(event => event.id === eventId);
+      
+      if (currentEvent) {
+        console.log('Found event in localStorage:', currentEvent);
+        setEventData({
+          id: eventId,
+          name: currentEvent.name,
+          description: currentEvent.description || '',
+          windowStart: currentEvent.windowStart || new Date().toISOString().split('T')[0],
+          windowEnd: currentEvent.windowEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          createdAt: currentEvent.createdAt,
+        });
+      } else {
+        console.log('Event not found in localStorage, using demo data');
+        // Generate demo event based on eventId
+        const demoEvents = [
+          { 
+            name: 'Team Meeting', 
+            description: 'Weekly team sync to discuss project updates and plan next steps',
+            windowStart: '2025-01-27',
+            windowEnd: '2025-02-03'
+          },
+          { 
+            name: 'Fantasy Football Draft', 
+            description: 'Annual draft for our fantasy football league - let\'s find a time that works for everyone!',
+            windowStart: '2025-01-28',
+            windowEnd: '2025-02-05'
+          },
+          { 
+            name: 'Book Club Discussion', 
+            description: 'Discussion of this month\'s book selection. We\'ll need about 2 hours.',
+            windowStart: '2025-01-29',
+            windowEnd: '2025-02-10'
+          },
+          { 
+            name: 'Project Planning Session', 
+            description: 'Planning session for the Q4 project launch. All stakeholders should attend.',
+            windowStart: '2025-01-30',
+            windowEnd: '2025-02-07'
+          },
+          { 
+            name: 'Family Dinner', 
+            description: 'Monthly family gathering - looking for a weekend that works for everyone.',
+            windowStart: '2025-02-01',
+            windowEnd: '2025-02-15'
+          }
+        ];
+        
+        const eventIndex = parseInt(eventId.slice(-1)) % demoEvents.length;
+        const selectedDemo = demoEvents[eventIndex];
+        
+        setEventData({
+          id: eventId,
+          name: selectedDemo.name,
+          description: selectedDemo.description,
+          windowStart: selectedDemo.windowStart,
+          windowEnd: selectedDemo.windowEnd,
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      // For localStorage mode, we don't have submissions
+      setSubmissions([]);
+      setLoading(false);
     };
 
     loadEventData();
   }, [eventId]);
+
+  // Function to load demo submissions for testing
+  const loadDemoSubmissions = () => {
+    const demoSubmissions = [
+      {
+        id: '1',
+        name: 'Alex Chen',
+        availability: 'Weekday evenings after 6 PM work best for me. I have a recurring meeting on Fridays at 2 PM, but that can be moved if necessary. Not available August 11-18 due to vacation.',
+        submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2 hours ago
+      },
+      {
+        id: '2', 
+        name: 'Sarah Johnson',
+        availability: 'I prefer mornings on weekends, but flexible for the right time. Evenings work too, ideally after 7 PM on weekdays when the kids are in bed.',
+        submittedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() // 4 hours ago
+      },
+      {
+        id: '3',
+        name: 'Mike Torres', 
+        availability: 'I\'m on the West Coast, so early mornings your time work great for me. Just not available Fridays due to standing team meetings.',
+        submittedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() // 6 hours ago
+      },
+      {
+        id: '4',
+        name: 'Emma Wilson',
+        availability: 'Tuesday through Thursday evenings are ideal. I can do lunch meetings if it\'s the only option that works for everyone.',
+        submittedAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString() // 8 hours ago
+      }
+    ];
+    
+    setSubmissions(demoSubmissions);
+  };
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
@@ -277,6 +345,49 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* Results Dashboard Header */}
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 flex items-center justify-center">
+            📊 Results Dashboard
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">
+            View participant responses and AI-generated meeting suggestions
+          </p>
+          
+          <div className="flex justify-center gap-4">
+            {submissions.length > 0 && (
+              <button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing}
+                className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    🔄 Refresh Suggestions
+                  </>
+                )}
+              </button>
+            )}
+            
+            {submissions.length === 0 && (
+              <button
+                onClick={loadDemoSubmissions}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+              >
+                📝 Load Demo Submissions
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Event Details & Share */}
           <div className="lg:col-span-2 space-y-6">
@@ -314,30 +425,9 @@ export default function AdminDashboard() {
 
             {/* Submissions */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  📋 Submissions ({submissions.length})
-                </h2>
-                {submissions.length > 0 && (
-                  <button
-                    onClick={handleAnalyze}
-                    disabled={isAnalyzing}
-                    className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white px-4 py-2 rounded-lg"
-                  >
-                    {isAnalyzing ? (
-                      <span className="flex items-center">
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Analyzing...
-                      </span>
-                    ) : (
-                      '🤖 Get AI Recommendations'
-                    )}
-                  </button>
-                )}
-              </div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                📋 Submissions ({submissions.length})
+              </h2>
 
               {submissions.length === 0 ? (
                 <div className="text-center py-8">
@@ -406,63 +496,134 @@ export default function AdminDashboard() {
 
           {/* Right Column - Analysis Results */}
           <div className="space-y-6">
-            {analysis && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  🤖 AI Recommendations
-                </h2>
+            {/* Quick Stats / Event Summary */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                📊 Event Summary
+              </h2>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {submissions.length}
+                  </div>
+                  <div className="text-sm text-blue-800 dark:text-blue-300">
+                    Participants
+                  </div>
+                </div>
                 
-                <div className="space-y-4">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                    <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                      Summary
-                    </h3>
-                    <p className="text-blue-800 dark:text-blue-200 text-sm">
+                <div className="text-center bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {analysis?.suggestions?.length || 3}
+                  </div>
+                  <div className="text-sm text-green-800 dark:text-green-300">
+                    Suggestions
+                  </div>
+                </div>
+                
+                <div className="text-center bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    ✓
+                  </div>
+                  <div className="text-sm text-purple-800 dark:text-purple-300">
+                    {eventData?.name || 'Event Ready'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {analysis && (
+              <>
+                {/* AI Analysis */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                    🧠 AI Analysis
+                  </h2>
+                  
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-4">
+                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                       {analysis.summary}
+                    </p>
+                    {analysis.challenges && (
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mt-3 italic">
+                        {analysis.challenges}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Suggested Meeting Times */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                    🕒 Suggested Meeting Times
+                  </h2>
+                  
+                  <div className="space-y-4">
+                    {analysis.suggestions.map((suggestion, index) => (
+                      <div key={index} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
+                              Option {index + 1}: {suggestion.date} at {suggestion.time}
+                            </h3>
+                          </div>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            suggestion.confidence.toLowerCase() === 'high' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                              : suggestion.confidence.toLowerCase() === 'medium'
+                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                          }`}>
+                            {suggestion.confidence.toLowerCase()} confidence
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {suggestion.notes}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recommendations */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                    💡 Recommendations
+                  </h2>
+                  
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4">
+                    <p className="text-blue-800 dark:text-blue-200 font-medium mb-2">
+                      Consider sharing these options with your group for final voting.
                     </p>
                   </div>
 
-                  {analysis.suggestions.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
-                        Best Meeting Times
-                      </h3>
-                      <div className="space-y-2">
-                        {analysis.suggestions.slice(0, 3).map((suggestion, index) => (
-                          <div key={index} className="border border-gray-200 dark:border-gray-600 rounded-lg p-3">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <div className="font-medium text-gray-900 dark:text-white">
-                                  {suggestion.date} at {suggestion.time}
-                                </div>
-                                <div className="text-sm text-gray-600 dark:text-gray-300">
-                                  {suggestion.notes}
-                                </div>
-                              </div>
-                              <span className={`text-xs px-2 py-1 rounded ${
-                                suggestion.confidence === 'high' 
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
-                                  : suggestion.confidence === 'medium'
-                                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
-                                  : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
-                              }`}>
-                                {suggestion.confidence}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Next Steps:</h3>
+                    <ul className="space-y-2">
+                      {analysis.recommendations.map((rec, index) => (
+                        <li key={index} className="flex items-start">
+                          <span className="text-blue-500 mr-2">•</span>
+                          <span className="text-gray-700 dark:text-gray-300 text-sm">{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Last updated: {new Date(analysis.lastUpdated).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
 
             {/* Quick Stats */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                📊 Quick Stats
+                📈 Quick Stats
               </h2>
+              
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-300">Submissions</span>
@@ -471,7 +632,7 @@ export default function AdminDashboard() {
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-300">Event Window</span>
                   <span className="font-semibold text-gray-900 dark:text-white text-sm">
-                    {eventData?.windowStart && eventData?.windowEnd 
+                    {eventData?.windowStart && eventData?.windowEnd
                       ? `${formatDateShort(eventData.windowStart)} to ${formatDateShort(eventData.windowEnd)}`
                       : 'Not set'
                     }
