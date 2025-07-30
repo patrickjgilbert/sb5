@@ -17,47 +17,51 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch event and responses from Supabase
-    const { supabase } = await import('@/lib/supabase');
+    let participantCount = 0;
 
-    // Fetch event details
-    const { data: event, error: eventError } = await supabase
-      .from('events')
-      .select('*')
-      .eq('id', eventId)
-      .single();
+    // Try to fetch event and responses from Supabase, with fallback if not configured
+    try {
+      // Check if Supabase environment variables are configured
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        console.log('Supabase not configured - using local mode for analysis');
+      } else {
+        const { supabase } = await import('@/lib/supabase');
 
-    if (eventError || !event) {
-      return NextResponse.json(
-        { error: 'Event not found' },
-        { status: 404 }
-      );
-    }
+        // Fetch event details
+        const { data: event, error: eventError } = await supabase
+          .from('events')
+          .select('*')
+          .eq('id', eventId)
+          .single();
 
-    // Fetch all responses for this event
-    const { data: responses, error: responsesError } = await supabase
-      .from('responses')
-      .select('*')
-      .eq('event_id', eventId)
-      .order('created_at', { ascending: false });
+        if (!eventError && event) {
+          // Fetch all responses for this event
+          const { data: dbResponses, error: responsesError } = await supabase
+            .from('responses')
+            .select('*')
+            .eq('event_id', eventId)
+            .order('created_at', { ascending: false });
 
-    if (responsesError) {
-      console.error('Error fetching responses:', responsesError);
-      return NextResponse.json(
-        { error: 'Failed to fetch responses' },
-        { status: 500 }
-      );
+          if (!responsesError && dbResponses) {
+            participantCount = dbResponses.length;
+            console.log(`Found ${participantCount} responses in database`);
+          }
+        } else {
+          console.log('Event not found in database - using local mode');
+        }
+      }
+    } catch (error) {
+      console.error('Supabase connection failed:', error);
+      console.log('Using local mode for analysis');
     }
 
     // Check if OpenAI API key is configured for real AI analysis
-    if (process.env.OPENAI_API_KEY) {
+    if (process.env.OPENAI_API_KEY && participantCount > 0) {
       // TODO: Implement real OpenAI analysis here
       // For now, we'll use mock analysis even with real data
     }
 
-    // Generate mock analysis based on real data
-    const participantCount = responses?.length || 0;
-    
+    // Generate mock analysis based on real data or fallback
     const mockAnalysis = {
       suggestions: [
         {

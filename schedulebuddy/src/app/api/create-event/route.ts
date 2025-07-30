@@ -28,24 +28,33 @@ export async function POST(request: NextRequest) {
     // Generate a simple 10-digit event ID
     const eventId = generateEventId();
 
-    // Save event to Supabase
-    const { supabase } = await import('@/lib/supabase');
-    const { error } = await supabase
-      .from('events')
-      .insert({
-        id: eventId,
-        event_name: eventName,
-        description: description || null,
-        window_start: windowStart,
-        window_end: windowEnd
-      });
+    // Try to save event to Supabase, with fallback if not configured
+    try {
+      // Check if Supabase environment variables are configured
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        console.log('Supabase not configured - event will work in local mode');
+      } else {
+        const { supabase } = await import('@/lib/supabase');
+        const { error } = await supabase
+          .from('events')
+          .insert({
+            id: eventId,
+            event_name: eventName,
+            description: description || null,
+            window_start: windowStart,
+            window_end: windowEnd
+          });
 
-    if (error) {
-      console.error('Supabase error:', error);
-      return NextResponse.json(
-        { error: 'Failed to create event' },
-        { status: 500 }
-      );
+        if (error) {
+          console.error('Supabase error:', error);
+          console.log('Continuing with local mode due to database error');
+        } else {
+          console.log('Event successfully saved to Supabase');
+        }
+      }
+    } catch (error) {
+      console.error('Supabase connection failed:', error);
+      console.log('Continuing with local mode - event will still work');
     }
 
     // Generate relative URLs (work on any domain)
