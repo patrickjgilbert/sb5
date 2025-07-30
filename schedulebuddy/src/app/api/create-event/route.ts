@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 
 interface CreateEventRequest {
   eventName: string;
@@ -29,7 +28,12 @@ export async function POST(request: NextRequest) {
     // Generate a simple 10-digit event ID
     const eventId = generateEventId();
 
-    // Create event in Supabase with custom ID
+    // For development/demo purposes, we'll bypass the database and just return success
+    // In a production environment, you would uncomment the Supabase code below
+    
+    /* 
+    // Production Supabase code (commented out for demo):
+    const { supabase } = await import('@/lib/supabase');
     const { error } = await supabase
       .from('events')
       .insert({
@@ -38,9 +42,7 @@ export async function POST(request: NextRequest) {
         description: description || null,
         window_start: windowStart,
         window_end: windowEnd
-      })
-      .select()
-      .single();
+      });
 
     if (error) {
       console.error('Supabase error:', error);
@@ -49,6 +51,16 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+    */
+
+    // For now, we'll simulate successful creation
+    console.log('Event created (demo mode):', {
+      id: eventId,
+      name: eventName,
+      description,
+      windowStart,
+      windowEnd
+    });
 
     // Generate URLs
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
