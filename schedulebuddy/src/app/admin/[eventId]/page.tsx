@@ -236,6 +236,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (submissions.length > 0 && !isAnalyzing) {
       console.log('Auto-triggering analysis for', submissions.length, 'submissions');
+      // Clear any existing analysis to force fresh data
+      setAnalysis(null);
       handleAnalyze();
     }
   }, [submissions.length]);
@@ -243,12 +245,17 @@ export default function AdminDashboard() {
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
     try {
+      // Add cache-busting timestamp
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
         },
-        body: JSON.stringify({ eventId }),
+        body: JSON.stringify({ 
+          eventId, 
+          timestamp: Date.now() // Cache busting
+        }),
       });
 
       if (!response.ok) {
@@ -256,6 +263,7 @@ export default function AdminDashboard() {
       }
 
       const result = await response.json();
+      console.log('Fresh analysis result:', result.suggestions); // Debug logging
       setAnalysis(result);
     } catch (error) {
       console.error('Error analyzing:', error);
@@ -514,26 +522,37 @@ export default function AdminDashboard() {
               ))}
             </div>
 
-            {/* Refresh Analysis Button */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <button
-                onClick={handleAnalyze}
-                disabled={isAnalyzing}
-                className="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Analyzing...
-                  </>
-                ) : (
-                  '🔄 Refresh Analysis'
-                )}
-              </button>
-            </div>
+                         {/* Refresh Analysis Button */}
+             <div className="mt-6 pt-4 border-t border-gray-200 flex gap-3">
+               <button
+                 onClick={handleAnalyze}
+                 disabled={isAnalyzing}
+                 className="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
+               >
+                 {isAnalyzing ? (
+                   <>
+                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                     </svg>
+                     Analyzing...
+                   </>
+                 ) : (
+                   '🔄 Refresh Analysis'
+                 )}
+               </button>
+               
+               <button
+                 onClick={() => {
+                   setAnalysis(null);
+                   handleAnalyze();
+                 }}
+                 disabled={isAnalyzing}
+                 className="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
+               >
+                 🔥 Force Fresh Analysis
+               </button>
+             </div>
           </div>
         )}
 
