@@ -77,55 +77,33 @@ async function generateRealAIAnalysis(event: { event_name: string; description?:
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const prompt = `You are a senior scheduling strategist with expertise in complex group coordination and deep understanding of human psychology around time management. 
+  const prompt = `You are a friendly scheduling assistant helping coordinate a group meeting.
 
-Event Context:
-- Event: "${event.event_name}"
-- Description: ${event.description || 'No description provided'}
-- Available Window: ${event.window_start} to ${event.window_end}
-- Participants: ${responses.length} people
+Event: "${event.event_name}"
+Available Window: ${event.window_start} to ${event.window_end}
+Participants: ${responses.length} people
 
-Individual Participant Analysis:
+Participant Responses:
 ${responses.map((response, index) => 
-  `
-PARTICIPANT ${index + 1}: ${response.participant_name}
-Availability Statement: "${response.availability}"
-Submitted: ${response.created_at}
-`
-).join('')}
+  `${response.participant_name}: "${response.availability}"`
+).join('\n')}
 
-ANALYSIS REQUIREMENTS:
-
-1. DEEP PARTICIPANT INSIGHTS: Analyze each person's specific constraints, preferences, and patterns. Look for:
-   - Time zone differences and travel schedules
-   - Work vs personal commitments  
-   - Weekend vs weekday preferences
-   - Recurring patterns vs one-time conflicts
-   - Energy levels and optimal meeting times
-   - Hidden constraints not explicitly stated
-
-2. STRATEGIC SCHEDULING: Provide 3-4 meeting options that demonstrate sophisticated understanding of group dynamics. ALL SUGGESTED DATES MUST BE WITHIN THE EVENT WINDOW (${event.window_start} to ${event.window_end}).
-
-3. CONFLICT RESOLUTION: Address specific tensions between different participants' needs
-
-4. ACTIONABLE GUIDANCE: Give the organizer clear, specific next steps
+Please provide a simple, clear analysis in friendly language. Keep everything concise and easy to understand.
 
 RESPONSE FORMAT (JSON):
 {
-  "summary": "2-3 sentences describing the overall scheduling landscape, key patterns, and strategic opportunities",
-  "challenges": "Detailed paragraph identifying specific conflicts, constraints, and why certain times won't work. Name participants and their specific issues.",
+  "summary": "1-2 simple sentences about what works best for this group",
+  "challenges": "Brief mention of main scheduling challenge (if any), in simple language",
   "suggestions": [
     {
       "time": "Wednesday, July 30th at 7:00 PM EST",
       "confidence": "high|medium|low", 
-      "notes": "2-3 sentences explaining WHO this accommodates, WHY it works, what trade-offs exist, and strategic benefits"
+      "notes": "Short, simple reason why this time works well"
     }
   ],
   "recommendations": [
-    "Specific, actionable step with reasoning",
-    "Another concrete next step",
-    "Strategic recommendation for optimization",
-    "Follow-up action for confirmation"
+    "Simple next step",
+    "Another clear action"
   ]
 }
 
@@ -142,7 +120,7 @@ CRITICAL CONSTRAINTS:
     messages: [
       {
         role: "system",
-        content: "You are a senior scheduling strategist with 15+ years of experience coordinating complex executive calendars and group meetings. You have deep psychological insight into time management patterns and excel at finding creative solutions to scheduling conflicts. Provide strategic, detailed analysis that demonstrates sophisticated understanding of individual constraints and group dynamics."
+        content: "You are a helpful scheduling assistant. Keep your language simple, friendly, and easy to understand. Focus on practical suggestions rather than complex analysis. Be concise but helpful."
       },
       {
         role: "user",
@@ -150,7 +128,7 @@ CRITICAL CONSTRAINTS:
       }
     ],
     temperature: 0.3,
-    max_tokens: 3000
+    max_tokens: 1500
   });
 
   const responseContent = completion.choices[0]?.message?.content;
@@ -323,44 +301,42 @@ export async function POST(request: NextRequest) {
           time: "7:00 PM EST", 
           confidence: "High",
           notes: participantCount > 0 
-            ? `Based on ${participantCount} response${participantCount !== 1 ? 's' : ''}, this evening time accommodates most participants' availability constraints`
-            : "Evening time selected based on typical work schedule preferences"
+            ? "Works well for most people's schedules"
+            : "Good evening time for most work schedules"
         },
         {
           date: formatDateForDisplay(suggestedDateStrings[1] || suggestedDateStrings[0]), 
           time: "6:30 PM EST",
           confidence: "Medium",
           notes: participantCount > 0 
-            ? "Alternative evening option that works around reported scheduling conflicts"
-            : "Earlier evening alternative for those with late commitments"
+            ? "Alternative evening option"
+            : "Earlier evening alternative"
         },
         {
           date: formatDateForDisplay(suggestedDateStrings[2] || suggestedDateStrings[0]),
           time: "2:00 PM EST", 
           confidence: "Medium",
           notes: participantCount > 0
-            ? "Weekend afternoon option for participants who prefer daytime meetings"
-            : "Weekend afternoon option for flexible scheduling"
+            ? "Weekend afternoon option"
+            : "Weekend afternoon alternative"
         }
       ],
       summary: participantCount > 0 
-        ? `Based on ${participantCount} response${participantCount !== 1 ? 's' : ''}, evening times work best for this group. Most participants prefer weekday evenings after 6 PM, with some flexibility for important meetings.`
-        : "No responses yet. Share the participant link to start collecting availability.",
+        ? `Evening times work well for your ${participantCount} participant${participantCount !== 1 ? 's' : ''}. Most prefer weekday evenings.`
+        : "Share your link to start collecting responses and get personalized suggestions.",
       participantCount,
       lastUpdated: new Date().toISOString(),
       challenges: participantCount > 0 
-        ? "Some participants have timezone differences and recurring commitments, but most show flexibility for important meetings."
-        : "Waiting for participant responses to identify scheduling challenges.",
+        ? "Some time zone differences, but good flexibility overall."
+        : "",
       recommendations: participantCount > 0 
         ? [
-            "Share the suggested times with all participants for final confirmation",
-            "Ask for final confirmation or voting on the preferred option", 
-            "Schedule the meeting with the preferred time and send calendar invites"
+            "Share these options with your group for voting",
+            "Schedule the preferred time and send calendar invites"
           ]
         : [
             "Share the participant link with your group",
-            "Encourage honest, detailed availability responses",
-            "Return here once you have 2+ responses for better recommendations"
+            "Come back when you have 2+ responses"
           ]
     };
 
