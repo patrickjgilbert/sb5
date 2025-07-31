@@ -74,37 +74,43 @@ export default function ParticipantPage() {
         // For now, we'll create a more realistic fallback based on eventId
         // In a production app, this would be: const response = await fetch(`/api/events/${eventId}`)
         
-        // Generate a more realistic demo event based on eventId
+        // Generate a more realistic demo event based on eventId with current dates
+        const today = new Date();
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(today.getDate() + 30);
+        
+        const formatDate = (date: Date) => date.toISOString().split('T')[0];
+        
         const demoEvents = [
           { 
             name: 'Team Meeting', 
             description: 'Weekly team sync to discuss project updates and plan next steps',
-            windowStart: '2025-01-27',
-            windowEnd: '2025-02-03'
+            windowStart: formatDate(today),
+            windowEnd: formatDate(thirtyDaysFromNow)
           },
           { 
             name: 'Fantasy Football Draft', 
             description: 'Annual draft for our fantasy football league - let\'s find a time that works for everyone!',
-            windowStart: '2025-01-28',
-            windowEnd: '2025-02-05'
+            windowStart: formatDate(today),
+            windowEnd: formatDate(thirtyDaysFromNow)
           },
           { 
             name: 'Book Club Discussion', 
             description: 'Discussion of this month\'s book selection. We\'ll need about 2 hours.',
-            windowStart: '2025-01-29',
-            windowEnd: '2025-02-10'
+            windowStart: formatDate(today),
+            windowEnd: formatDate(thirtyDaysFromNow)
           },
           { 
             name: 'Project Planning Session', 
             description: 'Planning session for the Q4 project launch. All stakeholders should attend.',
-            windowStart: '2025-01-30',
-            windowEnd: '2025-02-07'
+            windowStart: formatDate(today),
+            windowEnd: formatDate(thirtyDaysFromNow)
           },
           { 
             name: 'Family Dinner', 
             description: 'Monthly family gathering - looking for a weekend that works for everyone.',
-            windowStart: '2025-02-01',
-            windowEnd: '2025-02-15'
+            windowStart: formatDate(today),
+            windowEnd: formatDate(thirtyDaysFromNow)
           }
         ];
         

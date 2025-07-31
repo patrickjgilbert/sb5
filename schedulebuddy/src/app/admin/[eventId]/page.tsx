@@ -347,12 +347,50 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
-            Admin Dashboard
-          </h1>
-          <p className="text-gray-600">
-            {eventData?.name}
-          </p>
+          {/* Event Title and Details */}
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
+              {eventData?.name || 'Event Admin Dashboard'}
+            </h1>
+            
+            {eventData?.description && (
+              <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+                {eventData.description}
+              </p>
+            )}
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+              <div className="bg-blue-50 rounded-lg p-3">
+                <span className="font-medium text-blue-900">Event ID:</span>
+                <br />
+                <span className="text-blue-700 font-mono">{eventId}</span>
+              </div>
+              
+              <div className="bg-green-50 rounded-lg p-3">
+                <span className="font-medium text-green-900">Start Date:</span>
+                <br />
+                <span className="text-green-700">
+                  {eventData?.windowStart ? formatDate(eventData.windowStart) : 'Not set'}
+                </span>
+              </div>
+              
+              <div className="bg-purple-50 rounded-lg p-3">
+                <span className="font-medium text-purple-900">End Date:</span>
+                <br />
+                <span className="text-purple-700">
+                  {eventData?.windowEnd ? formatDate(eventData.windowEnd) : 'Not set'}
+                </span>
+              </div>
+              
+              <div className="bg-gray-50 rounded-lg p-3">
+                <span className="font-medium text-gray-900">Created:</span>
+                <br />
+                <span className="text-gray-700">
+                  {eventData?.createdAt ? new Date(eventData.createdAt).toLocaleDateString() : 'Unknown'}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* 1. Share Your Event Section */}

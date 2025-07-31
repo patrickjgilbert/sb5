@@ -1,0 +1,13 @@
+
+> schedulebuddy@0.1.0 dev
+> next dev --turbopack
+
+ ⚠ Port 3000 is in use by process 31614, using available port 3002 instead.
+   ▲ Next.js 15.4.4 (Turbopack)
+   - Local:        http://localhost:3002
+   - Network:      http://192.168.1.209:3002
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 941ms
+[?25h
