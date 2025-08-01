@@ -515,36 +515,57 @@ export default function AdminDashboard() {
               ))}
             </div>
 
-                         {/* Refresh Analysis Button */}
-             <div className="mt-6 pt-4 border-t border-gray-200 flex gap-3">
-               <button
-                 onClick={handleAnalyze}
-                 disabled={isAnalyzing}
-                 className="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
-               >
-                 {isAnalyzing ? (
-                   <>
-                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                     </svg>
-                     Analyzing...
-                   </>
-                 ) : (
-                   '🔄 Refresh Analysis'
-                 )}
-               </button>
+                         {/* Analysis Update Options */}
+             <div className="mt-6 pt-4 border-t border-gray-200">
+               <div className="mb-4">
+                 <h4 className="text-sm font-medium text-gray-900 mb-2">Update Analysis</h4>
+                 <p className="text-xs text-gray-600">Choose how to refresh your meeting suggestions:</p>
+               </div>
                
-               <button
-                 onClick={() => {
-                   setAnalysis(null);
-                   handleAnalyze();
-                 }}
-                 disabled={isAnalyzing}
-                 className="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
-               >
-                 🔥 Force Fresh Analysis
-               </button>
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                 {/* Update with New Responses */}
+                 <div className="border border-gray-200 rounded-lg p-3 hover:border-purple-300 transition-colors">
+                   <button
+                     onClick={handleAnalyze}
+                     disabled={isAnalyzing}
+                     className="w-full inline-flex items-center justify-center px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white rounded-lg transition-colors disabled:cursor-not-allowed mb-2"
+                   >
+                     {isAnalyzing ? (
+                       <>
+                         <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                         </svg>
+                         Analyzing...
+                       </>
+                     ) : (
+                       <>
+                         🔄 Update Analysis
+                       </>
+                     )}
+                   </button>
+                   <div className="text-xs text-gray-600">
+                     <strong>Use when:</strong> New people have responded since your last analysis. Keeps current suggestions visible while updating.
+                   </div>
+                 </div>
+
+                 {/* Get Different Suggestions */}
+                 <div className="border border-gray-200 rounded-lg p-3 hover:border-red-300 transition-colors">
+                   <button
+                     onClick={() => {
+                       setAnalysis(null);
+                       handleAnalyze();
+                     }}
+                     disabled={isAnalyzing}
+                     className="w-full inline-flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-lg transition-colors disabled:cursor-not-allowed mb-2"
+                   >
+                     🎲 Try Different Suggestions
+                   </button>
+                   <div className="text-xs text-gray-600">
+                     <strong>Use when:</strong> You're not satisfied with the current recommendations and want the AI to suggest completely different meeting times.
+                   </div>
+                 </div>
+               </div>
              </div>
           </div>
         )}
@@ -581,7 +602,7 @@ export default function AdminDashboard() {
                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                    </svg>
-                   🤖 Generate AI Suggestions
+                   🤖 Generate Meeting Suggestions
                  </>
                )}
              </button>
@@ -650,7 +671,7 @@ export default function AdminDashboard() {
         {/* Footer with Auto-refresh Info */}
         <div className="text-center text-sm text-gray-500 py-4">
           <p>📡 This page auto-refreshes every 30 seconds to show new participant responses</p>
-          <p className="text-xs mt-1">💡 AI analysis is manual only - click "Generate AI Suggestions" to run analysis</p>
+          <p className="text-xs mt-1">💡 AI analysis is manual only - use "Update Analysis" for new responses or "Try Different Suggestions" for alternative recommendations</p>
           {analysis && (
             <p className="mt-1">
               Last AI analysis: {new Date(analysis.lastUpdated).toLocaleString()}

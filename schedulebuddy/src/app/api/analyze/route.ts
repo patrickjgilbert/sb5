@@ -116,7 +116,7 @@ CRITICAL CONSTRAINTS:
 - Each suggestion must include both date and time in the format shown above`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4",
+    model: "gpt-4o",
     messages: [
       {
         role: "system",
@@ -128,7 +128,7 @@ CRITICAL CONSTRAINTS:
       }
     ],
     temperature: 0.3,
-    max_tokens: 1500
+    max_tokens: 1000  // Reduced from 1500 to save ~20% on output costs
   });
 
   const responseContent = completion.choices[0]?.message?.content;
