@@ -6,7 +6,11 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "test:build": "npm run build && npm run start",
+    "preview": "npm run build && npm run start"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.53.0",
