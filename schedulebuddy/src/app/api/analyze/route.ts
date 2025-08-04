@@ -77,43 +77,14 @@ async function generateRealAIAnalysis(event: { event_name: string; description?:
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const prompt = `You are a friendly scheduling assistant helping coordinate a group meeting.
+  const prompt = `Schedule analysis for "${event.event_name}" (${event.window_start} to ${event.window_end}):
 
-Event: "${event.event_name}"
-Available Window: ${event.window_start} to ${event.window_end}
-Participants: ${responses.length} people
-
-Participant Responses:
-${responses.map((response, index) => 
-  `${response.participant_name}: "${response.availability}"`
+${responses.map((response) => 
+  `${response.participant_name}: ${response.availability}`
 ).join('\n')}
 
-Please provide a simple, clear analysis in friendly language. Keep everything concise and easy to understand.
-
-RESPONSE FORMAT (JSON):
-{
-  "summary": "1-2 simple sentences about what works best for this group",
-  "challenges": "Brief mention of main scheduling challenge (if any), in simple language",
-  "suggestions": [
-    {
-      "time": "Wednesday, July 30th at 7:00 PM EST",
-      "confidence": "high|medium|low", 
-      "notes": "Short, simple reason why this time works well"
-    }
-  ],
-  "recommendations": [
-    "Simple next step",
-    "Another clear action"
-  ]
-}
-
-CRITICAL CONSTRAINTS:
-- ALL suggested meeting times MUST fall within the event window dates (${event.window_start} to ${event.window_end})
-- Use EXACTLY this format for each suggestion time: "Wednesday, July 30th at 7:00 PM EST"
-- IMPORTANT: Use the current year ${new Date().getFullYear()} and only suggest dates within the specified window
-- Do NOT suggest dates outside the specified window or from different years
-- Do NOT hallucinate or make up dates - only use dates that fall within the actual event window
-- Each suggestion must include both date and time in the format shown above`;
+Return JSON only:
+{"summary": "brief overview", "challenges": "main issues", "suggestions": [{"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "reason"}], "recommendations": ["action1", "action2"]}`;
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4o",
@@ -137,12 +108,25 @@ CRITICAL CONSTRAINTS:
     throw new Error('No response from OpenAI');
   }
 
-  // Parse the JSON response
+  // Parse the JSON response, handling markdown code blocks
   let aiResponse;
   try {
-    aiResponse = JSON.parse(responseContent);
-  } catch {
-    console.error('Failed to parse OpenAI response:', responseContent);
+    console.log('🤖 OpenAI Raw Response:', responseContent);
+    
+    // Strip markdown code blocks if present (```json ... ```)
+    let cleanedContent = responseContent.trim();
+    if (cleanedContent.startsWith('```json')) {
+      cleanedContent = cleanedContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (cleanedContent.startsWith('```')) {
+      cleanedContent = cleanedContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    
+    console.log('🧹 Cleaned Response for parsing:', cleanedContent);
+    aiResponse = JSON.parse(cleanedContent);
+    console.log('✅ Successfully parsed OpenAI response');
+  } catch (parseError) {
+    console.error('❌ Failed to parse OpenAI response:', parseError);
+    console.error('📝 Raw response content:', responseContent);
     throw new Error('Invalid response format from AI');
   }
 
