@@ -302,9 +302,17 @@ CREATE TABLE responses (
    npm run dev
    ```
 
-### Deployment Process
+### Development & Testing Workflow
 
-#### Automatic Deployment (Recommended)
+**For safe development with testing before production deployment:**
+
+1. **See [DEVELOPMENT.md](schedulebuddy/DEVELOPMENT.md)** for complete workflow guide
+2. **Use feature branches** for new changes
+3. **Test locally** with `npm run dev` 
+4. **Get Vercel preview** by pushing feature branches
+5. **Merge to main** only after testing
+
+#### Automatic Deployment (Production)
 1. **Push to main branch**:
    ```bash
    git add .

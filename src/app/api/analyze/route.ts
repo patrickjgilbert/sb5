@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare the enhanced prompt for OpenAI
-    const prompt = `You are a senior scheduling strategist with expertise in complex group coordination and deep understanding of human psychology around time management. 
+    const prompt = `You are a senior scheduling strategist with expertise in complex group coordination and deep understanding of human psychology around time management. Your PRIMARY OBJECTIVE is to find times that work for 100% of participants whenever possible.
 
 Event Context:
 - Event: "${event.event_name}"
@@ -104,9 +104,12 @@ Submitted: ${response.created_at}
 `
 ).join('\n')}
 
-ANALYSIS REQUIREMENTS:
+CRITICAL SCHEDULING PRIORITIES (IN ORDER):
 
-1. DEEP PARTICIPANT INSIGHTS: Analyze each person's specific constraints, preferences, and patterns. Look for:
+1. **100% AVAILABILITY FIRST**: Your absolute top priority is finding times where ALL participants can attend. Only suggest times that exclude participants if you have exhausted all possibilities for universal availability.
+
+2. **DEEP PARTICIPANT INSIGHTS**: Analyze each person's specific constraints, preferences, and patterns. Look for:
+   - Explicit "not available" dates/times mentioned by name
    - Time zone differences and travel schedules
    - Work vs personal commitments  
    - Weekend vs weekday preferences
@@ -114,32 +117,37 @@ ANALYSIS REQUIREMENTS:
    - Energy levels and optimal meeting times
    - Hidden constraints not explicitly stated
 
-2. STRATEGIC SCHEDULING: Provide 3-4 meeting options that demonstrate sophisticated understanding of group dynamics
+3. **CONFLICT TRANSPARENCY**: If no time works for 100% of participants, clearly state this in your summary and identify exactly who has conflicts with each suggested time.
 
-3. CONFLICT RESOLUTION: Address specific tensions between different participants' needs
+4. **INDIVIDUAL CONTEXT**: For each suggestion, mention participants by name and explain how their specific availability influenced the recommendation.
 
-4. ACTIONABLE GUIDANCE: Give the organizer clear, specific next steps
+5. **ACTIONABLE GUIDANCE**: Give the organizer clear, specific next steps for coordination.
 
 RESPONSE FORMAT (JSON):
 {
-  "summary": "2-3 sentences describing the overall scheduling landscape, key patterns, and strategic opportunities",
-  "challenges": "Detailed paragraph identifying specific conflicts, constraints, and why certain times won't work. Name participants and their specific issues.",
+  "summary": "Start with whether 100% availability is possible. If yes, emphasize this. If no, explicitly state 'No time slots work for all participants' and explain the best compromise options available.",
+  "challenges": "Detailed paragraph identifying specific conflicts, constraints, and why certain times won't work. Name each participant and their specific conflicts. Be explicit about who cannot attend proposed times.",
   "suggestions": [
     {
       "time": "Wednesday, August 14th, 2025 at 7:00 PM EST",
       "confidence": "high|medium|low", 
-      "notes": "2-3 sentences explaining WHO this accommodates, WHY it works, what trade-offs exist, and strategic benefits"
+      "notes": "2-3 sentences explicitly naming participants and their availability. Start with 'This works for: [names]' or 'This excludes: [names] because [specific reason]'. Explain why this time was chosen and any trade-offs."
     }
   ],
   "recommendations": [
     "Specific, actionable step with reasoning",
-    "Another concrete next step",
-    "Strategic recommendation for optimization",
-    "Follow-up action for confirmation"
+    "Another concrete next step focusing on resolving conflicts",
+    "Strategic recommendation for getting to 100% availability if not achieved",
+    "Follow-up action for confirmation with specific participants"
   ]
 }
 
-DEMONSTRATE EXPERTISE: Show that you understand each participant's situation deeply and can find creative solutions. Be specific about individuals and their constraints. Provide insights that go beyond surface-level schedule matching.`;
+CRITICAL INSTRUCTIONS:
+- NEVER suggest a time that excludes participants unless you've exhausted all options for 100% availability
+- ALWAYS name specific participants when discussing availability and conflicts
+- If no perfect time exists, make this crystal clear in the summary
+- Provide detailed reasoning for why certain participants cannot make suggested times
+- Focus on finding creative solutions that include everyone before settling for exclusions`;
 
     try {
       // Initialize OpenAI client
