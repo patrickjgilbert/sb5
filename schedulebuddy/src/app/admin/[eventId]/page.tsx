@@ -133,11 +133,11 @@ export default function AdminDashboard() {
         },
         { 
           name: 'Fantasy Football Draft', 
-          description: 'Annual draft for our fantasy football league - let\'s find a time that works for everyone!',
+                      description: 'Annual draft for our fantasy football league - let&apos;s find a time that works for everyone!',
         },
         { 
           name: 'Book Club Discussion', 
-          description: 'Discussion of this month\'s book selection. We\'ll need about 2 hours.',
+                      description: 'Discussion of this month&apos;s book selection. We&apos;ll need about 2 hours.',
         },
         { 
           name: 'Project Planning Session', 
@@ -178,7 +178,7 @@ export default function AdminDashboard() {
         {
           id: '3',
           name: 'Mike Torres', 
-          availability: 'I\'m on the West Coast, so early mornings your time work great for me. Just not available Fridays due to standing team meetings.',
+                      availability: 'I&apos;m on the West Coast, so early mornings your time work great for me. Just not available Fridays due to standing team meetings.',
           submittedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
         }
       ];
@@ -561,9 +561,9 @@ export default function AdminDashboard() {
                    >
                      🎲 Try Different Suggestions
                    </button>
-                   <div className="text-xs text-gray-600">
-                     <strong>Use when:</strong> You're not satisfied with the current recommendations and want the AI to suggest completely different meeting times.
-                   </div>
+                                     <div className="text-xs text-gray-600">
+                    <strong>Use when:</strong> You&apos;re not satisfied with the current recommendations and want the AI to suggest completely different meeting times.
+                  </div>
                  </div>
                </div>
              </div>
@@ -671,7 +671,7 @@ export default function AdminDashboard() {
         {/* Footer with Auto-refresh Info */}
         <div className="text-center text-sm text-gray-500 py-4">
           <p>📡 This page auto-refreshes every 30 seconds to show new participant responses</p>
-          <p className="text-xs mt-1">💡 AI analysis is manual only - use "Update Analysis" for new responses or "Try Different Suggestions" for alternative recommendations</p>
+          <p className="text-xs mt-1">💡 AI analysis is manual only - use &ldquo;Update Analysis&rdquo; for new responses or &ldquo;Try Different Suggestions&rdquo; for alternative recommendations</p>
           {analysis && (
             <p className="mt-1">
               Last AI analysis: {new Date(analysis.lastUpdated).toLocaleString()}
