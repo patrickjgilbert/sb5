@@ -77,43 +77,30 @@ async function generateRealAIAnalysis(event: { event_name: string; description?:
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const prompt = `You are a friendly scheduling assistant helping coordinate a group meeting.
+  const prompt = `Analyze participant availability for "${event.event_name}" between ${event.window_start} and ${event.window_end}.
 
-Event: "${event.event_name}"
-Available Window: ${event.window_start} to ${event.window_end}
-Participants: ${responses.length} people
-
-Participant Responses:
-${responses.map((response, index) => 
-  `${response.participant_name}: "${response.availability}"`
+Participants:
+${responses.map((response) => 
+  `- ${response.participant_name}: ${response.availability}`
 ).join('\n')}
 
-Please provide a simple, clear analysis in friendly language. Keep everything concise and easy to understand.
+Find 2-3 meeting times that work best for this group. Return only JSON:
 
-RESPONSE FORMAT (JSON):
 {
-  "summary": "1-2 simple sentences about what works best for this group",
-  "challenges": "Brief mention of main scheduling challenge (if any), in simple language",
+  "summary": "Brief overview of what works for the group",
+  "challenges": "Main scheduling difficulty if any", 
   "suggestions": [
     {
-      "time": "Wednesday, July 30th at 7:00 PM EST",
-      "confidence": "high|medium|low", 
-      "notes": "Short, simple reason why this time works well"
+      "time": "Monday, August 12th at 7:00 PM EST",
+      "confidence": "high",
+      "notes": "Works for most participants, good evening time"
     }
   ],
   "recommendations": [
-    "Simple next step",
-    "Another clear action"
+    "Contact participants to confirm",
+    "Set calendar invite"
   ]
-}
-
-CRITICAL CONSTRAINTS:
-- ALL suggested meeting times MUST fall within the event window dates (${event.window_start} to ${event.window_end})
-- Use EXACTLY this format for each suggestion time: "Wednesday, July 30th at 7:00 PM EST"
-- IMPORTANT: Use the current year ${new Date().getFullYear()} and only suggest dates within the specified window
-- Do NOT suggest dates outside the specified window or from different years
-- Do NOT hallucinate or make up dates - only use dates that fall within the actual event window
-- Each suggestion must include both date and time in the format shown above`;
+}`;
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4o",
