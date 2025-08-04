@@ -77,16 +77,23 @@ async function generateRealAIAnalysis(event: { event_name: string; description?:
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const prompt = `Analyze "${event.event_name}" scheduling (${event.window_start} to ${event.window_end}):
+  const prompt = `Schedule analysis for ${responses.length} participants (${event.window_start} to ${event.window_end}):
 
 ${responses.map((response) => 
   `${response.participant_name}: ${response.availability}`
 ).join('\n')}
 
-Provide detailed participant-specific analysis. Study each person's constraints carefully. Mention specific participants by name in your reasoning.
+CRITICAL: You must analyze each person's specific constraints in detail. Look for:
+- Work schedules and meeting conflicts
+- Family commitments (spouse work, kids bedtime, etc.)
+- Personal preferences (daytime vs evening, specific days)
+- Vacation dates and unavailable periods
+- Time zone differences
+
+For each suggestion, explain exactly which participants benefit and why, mentioning their specific constraints by name.
 
 Return JSON:
-{"summary": "detailed overview of what works best, mentioning specific timing preferences and participant needs", "challenges": "specific conflicts mentioning participant names and their exact constraints (work schedules, family commitments, etc)", "suggestions": [{"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "detailed reasoning explaining which participants this works for and why, mentioning specific constraints"}], "recommendations": ["specific action mentioning participants", "another detailed recommendation"]}`;
+{"summary": "Detailed analysis of group availability patterns, mentioning specific participant preferences and optimal timing", "challenges": "Specific scheduling conflicts naming each participant and their exact constraints (e.g., 'John's kids bedtime at 8pm conflicts with Sarah's work schedule ending at 7pm')", "suggestions": [{"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Detailed explanation mentioning each participant by name - who this works for and why (e.g., 'This accommodates John's kids bedtime since it ends by 7pm, works with Sarah's work schedule, but conflicts with Mike's Tuesday meetings')"}], "recommendations": ["Specific action naming participants and addressing their constraints", "Another detailed recommendation with participant names"]}`;
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4o",
