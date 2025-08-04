@@ -83,17 +83,12 @@ ${responses.map((response) =>
   `${response.participant_name}: ${response.availability}`
 ).join('\n')}
 
-CRITICAL: You must analyze each person's specific constraints in detail. Look for:
-- Work schedules and meeting conflicts
-- Family commitments (spouse work, kids bedtime, etc.)
-- Personal preferences (daytime vs evening, specific days)
-- Vacation dates and unavailable periods
-- Time zone differences
+Analyze participant constraints and find the best meeting times. Focus on the most important conflicts and preferences - don't analyze every participant unless they have a key constraint.
 
-For each suggestion, explain exactly which participants benefit and why, mentioning their specific constraints by name.
+Always provide exactly 3 suggestions. For each suggestion, mention only the significant constraints or conflicts that matter for that time slot.
 
 Return JSON:
-{"summary": "Detailed analysis of group availability patterns, mentioning specific participant preferences and optimal timing", "challenges": "Specific scheduling conflicts naming each participant and their exact constraints (e.g., 'John's kids bedtime at 8pm conflicts with Sarah's work schedule ending at 7pm')", "suggestions": [{"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Detailed explanation mentioning each participant by name - who this works for and why (e.g., 'This accommodates John's kids bedtime since it ends by 7pm, works with Sarah's work schedule, but conflicts with Mike's Tuesday meetings')"}], "recommendations": ["Specific action naming participants and addressing their constraints", "Another detailed recommendation with participant names"]}`;
+{"summary": "Brief overview of what works best for the group and main timing considerations", "challenges": "Key scheduling conflicts mentioning specific participants with important constraints", "suggestions": [{"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Concise reasoning highlighting key participants and important constraints (e.g., 'Works for most, but conflicts with Sarah's kids bedtime' or 'Avoids John's vacation and accommodates evening preferences')"}, {"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Another concise explanation"}, {"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Third option reasoning"}], "recommendations": ["Practical next step", "Another actionable recommendation"]}`;
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4-turbo",
