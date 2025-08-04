@@ -91,7 +91,7 @@ Return JSON:
 {"summary": "Brief overview of what works best for the group and main timing considerations", "challenges": "Key scheduling conflicts mentioning specific participants with important constraints", "suggestions": [{"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Concise reasoning highlighting key participants and important constraints (e.g., 'Works for most, but conflicts with Sarah's kids bedtime' or 'Avoids John's vacation and accommodates evening preferences')"}, {"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Another concise explanation"}, {"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Third option reasoning"}], "recommendations": ["Practical next step", "Another actionable recommendation"]}`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4-turbo",
+    model: "gpt-4o-mini", // Cost-effective model
     messages: [
       {
         role: "system",
