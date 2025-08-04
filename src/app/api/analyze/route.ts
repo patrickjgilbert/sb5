@@ -77,30 +77,16 @@ async function generateRealAIAnalysis(event: { event_name: string; description?:
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const prompt = `Analyze participant availability for "${event.event_name}" between ${event.window_start} and ${event.window_end}.
+  const prompt = `Analyze "${event.event_name}" scheduling (${event.window_start} to ${event.window_end}):
 
-Participants:
 ${responses.map((response) => 
-  `- ${response.participant_name}: ${response.availability}`
+  `${response.participant_name}: ${response.availability}`
 ).join('\n')}
 
-Find 2-3 meeting times that work best for this group. Return only JSON:
+Provide detailed participant-specific analysis. Study each person's constraints carefully. Mention specific participants by name in your reasoning.
 
-{
-  "summary": "Brief overview of what works for the group",
-  "challenges": "Main scheduling difficulty if any", 
-  "suggestions": [
-    {
-      "time": "Monday, August 12th at 7:00 PM EST",
-      "confidence": "high",
-      "notes": "Works for most participants, good evening time"
-    }
-  ],
-  "recommendations": [
-    "Contact participants to confirm",
-    "Set calendar invite"
-  ]
-}`;
+Return JSON:
+{"summary": "detailed overview of what works best, mentioning specific timing preferences and participant needs", "challenges": "specific conflicts mentioning participant names and their exact constraints (work schedules, family commitments, etc)", "suggestions": [{"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "detailed reasoning explaining which participants this works for and why, mentioning specific constraints"}], "recommendations": ["specific action mentioning participants", "another detailed recommendation"]}`;
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4o",
