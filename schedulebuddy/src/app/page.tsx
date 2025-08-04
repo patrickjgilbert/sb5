@@ -273,6 +273,45 @@ export default function Home() {
             Get Started - Create Your First Event
           </Link>
         </div>
+
+        {/* Footer */}
+        <footer className="mt-24 pt-12 border-t border-gray-200 dark:border-gray-700">
+          <div className="max-w-4xl mx-auto text-center">
+            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+              ScheduleBuddy was built and is maintained by Patrick Gilbert of{' '}
+              <a
+                href="https://www.adventureppc.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+              >
+                AdVenture Media
+              </a>
+              , a strategy-first digital advertising agency based in NY. To learn more about AdVenture&apos;s services and their AI-forward approach to modern advertising strategy, check out{' '}
+              <a
+                href="https://www.adventureppc.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+              >
+                adventureppc.com
+              </a>
+              .
+            </p>
+            <p className="text-gray-600 dark:text-gray-400 mt-4">
+              To connect with Patrick, visit his{' '}
+              <a
+                href="https://www.linkedin.com/in/patrickjamesgilbert/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+              >
+                LinkedIn profile
+              </a>
+              .
+            </p>
+          </div>
+        </footer>
       </div>
     </div>
   );
