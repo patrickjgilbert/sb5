@@ -96,7 +96,7 @@ Return JSON:
 {"summary": "Detailed analysis of group availability patterns, mentioning specific participant preferences and optimal timing", "challenges": "Specific scheduling conflicts naming each participant and their exact constraints (e.g., 'John's kids bedtime at 8pm conflicts with Sarah's work schedule ending at 7pm')", "suggestions": [{"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Detailed explanation mentioning each participant by name - who this works for and why (e.g., 'This accommodates John's kids bedtime since it ends by 7pm, works with Sarah's work schedule, but conflicts with Mike's Tuesday meetings')"}], "recommendations": ["Specific action naming participants and addressing their constraints", "Another detailed recommendation with participant names"]}`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "gpt-4-turbo",
     messages: [
       {
         role: "system",
