@@ -16,6 +16,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ScheduleBuddy - Smart Group Meeting Coordination",
   description: "The smart way to coordinate group meetings. Collect availability from everyone and get AI-powered recommendations for the best meeting times.",
+  icons: {
+    icon: [
+      { url: '/favicon-simple.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: '32x32' }
+    ],
+    apple: '/favicon-simple.svg',
+  },
 };
 
 export default function RootLayout({
