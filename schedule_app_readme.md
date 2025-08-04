@@ -208,3 +208,166 @@ Prioritize:
 
 Minimal infrastructure with maximum usefulness.
 
+---
+
+## 🚀 Deployment & Configuration
+
+### GitHub Repository
+- **Repository**: `https://github.com/patrickjgilbert/sb5.git`
+- **Branch**: `main` (default deployment branch)
+
+### Vercel Deployment
+- **Platform**: Vercel (automatic deployments from GitHub)
+- **Production URL**: https://www.schedulebuddy.co
+- **Vercel URL**: https://sb5.vercel.app
+- **Framework**: Next.js (automatically detected)
+- **Build Command**: `npm run build`
+- **Install Command**: `npm install`
+- **Output Directory**: `.next` (default)
+- **Node.js Version**: Latest stable (auto-detected from `package.json`)
+- **Configuration**: Fluid Compute enabled, Standard Protection, 1 vCPU, 2 GB Memory
+
+### Environment Variables Required
+
+#### OpenAI Configuration
+```bash
+OPENAI_API_KEY=sk-proj-[YOUR_OPENAI_API_KEY]
+```
+- **Purpose**: Powers the AI analysis feature for schedule recommendations
+- **Where to get**: [OpenAI Platform](https://platform.openai.com/api-keys)
+- **Model used**: GPT-4o
+
+#### Supabase Configuration  
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://[YOUR_PROJECT_ID].supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs[YOUR_ANON_KEY]
+```
+- **Purpose**: Database storage for events and participant responses
+- **Where to get**: [Supabase Dashboard](https://app.supabase.com/)
+- **Current Project**: `wxirftjrvfihqwbcjewc.supabase.co`
+
+#### Development Configuration
+```bash
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+```
+- **Purpose**: Base URL for local development
+- **Production**: Set to `https://www.schedulebuddy.co` in production
+
+### Database Schema (Supabase)
+
+#### Events Table
+```sql
+CREATE TABLE events (
+  id TEXT PRIMARY KEY,
+  event_name TEXT NOT NULL,
+  description TEXT,
+  window_start TEXT NOT NULL,
+  window_end TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Responses Table  
+```sql
+CREATE TABLE responses (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id TEXT REFERENCES events(id),
+  participant_name TEXT NOT NULL,
+  availability TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### Local Development Setup
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/patrickjgilbert/sb5.git
+   cd sb5/schedulebuddy
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment variables**:
+   ```bash
+   cp .env.local.example .env.local
+   # Edit .env.local with your actual keys
+   ```
+
+4. **Run development server**:
+   ```bash
+   npm run dev
+   ```
+
+### Deployment Process
+
+#### Automatic Deployment (Recommended)
+1. **Push to main branch**:
+   ```bash
+   git add .
+   git commit -m "Your commit message"
+   git push origin main
+   ```
+2. **Vercel automatically deploys** from GitHub integration
+
+#### Manual Deployment via Vercel CLI
+1. **Install Vercel CLI**:
+   ```bash
+   npm install -g vercel
+   ```
+
+2. **Deploy**:
+   ```bash
+   vercel --prod
+   ```
+
+### Environment Variables in Vercel
+
+To update environment variables in production:
+
+1. **Via Vercel Dashboard**:
+   - Go to [Vercel Dashboard](https://vercel.com/dashboard)
+   - Select your project
+   - Go to Settings → Environment Variables
+   - Add/update variables for Production, Preview, and Development environments
+
+2. **Via Vercel CLI**:
+   ```bash
+   vercel env add OPENAI_API_KEY production
+   vercel env add NEXT_PUBLIC_SUPABASE_URL production
+   vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
+   ```
+
+### Key Dependencies
+- **Framework**: Next.js 15.4.4 with React 19.1.0
+- **Database**: Supabase (PostgreSQL)
+- **AI**: OpenAI API (GPT-4o)
+- **Styling**: Tailwind CSS 4.0
+- **Utilities**: date-fns, axios, uuid
+- **TypeScript**: Full TypeScript support
+
+### Troubleshooting Deployment Issues
+
+#### Common Issues:
+1. **Build fails**: Check environment variables are set in Vercel dashboard
+2. **API errors**: Verify OpenAI API key has sufficient credits
+3. **Database errors**: Confirm Supabase URL and key are correct
+4. **CORS issues**: Ensure domain is added to Supabase allowed origins
+
+#### Debug Steps:
+1. Check Vercel function logs in dashboard
+2. Verify environment variables in Vercel settings
+3. Test API endpoints individually
+4. Check Supabase dashboard for database connectivity
+
+### Security Notes
+- **Never commit** `.env.local` or API keys to version control
+- **Rotate keys** periodically for security
+- **Use different** API keys for development vs production
+- **Monitor usage** in OpenAI and Supabase dashboards
+
+---
+
