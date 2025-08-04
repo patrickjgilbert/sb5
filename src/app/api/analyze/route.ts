@@ -137,25 +137,12 @@ CRITICAL CONSTRAINTS:
     throw new Error('No response from OpenAI');
   }
 
-  // Parse the JSON response, handling markdown code blocks
+  // Parse the JSON response
   let aiResponse;
   try {
-    console.log('🤖 OpenAI Raw Response:', responseContent);
-    
-    // Strip markdown code blocks if present (```json ... ```)
-    let cleanedContent = responseContent.trim();
-    if (cleanedContent.startsWith('```json')) {
-      cleanedContent = cleanedContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-    } else if (cleanedContent.startsWith('```')) {
-      cleanedContent = cleanedContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
-    }
-    
-    console.log('🧹 Cleaned Response for parsing:', cleanedContent);
-    aiResponse = JSON.parse(cleanedContent);
-    console.log('✅ Successfully parsed OpenAI response');
-  } catch (parseError) {
-    console.error('❌ Failed to parse OpenAI response:', parseError);
-    console.error('📝 Raw response content:', responseContent);
+    aiResponse = JSON.parse(responseContent);
+  } catch {
+    console.error('Failed to parse OpenAI response:', responseContent);
     throw new Error('Invalid response format from AI');
   }
 
