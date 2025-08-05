@@ -83,12 +83,39 @@ ${responses.map((response) =>
   `${response.participant_name}: ${response.availability}`
 ).join('\n')}
 
-Analyze participant constraints and find the best meeting times. Focus on the most important conflicts and preferences - don't analyze every participant unless they have a key constraint.
+CRITICAL CONSTRAINT PARSING - Read each response carefully for:
 
-Always provide exactly 3 suggestions. For each suggestion, mention only the significant constraints or conflicts that matter for that time slot.
+1. ABSOLUTE UNAVAILABILITY (NEVER suggest these times):
+   - "unavailable [date]" or "not available [date]"
+   - "cannot participate during [date range]"
+   - "on vacation [dates]" or "in Europe [dates]"
+   - Date ranges like "Aug 18-23" means ALL dates from 18th through 23rd
+
+2. CONDITIONAL CONSTRAINTS (special rules for specific periods):
+   - "week of [date] need [different time]"
+   - "during [period] only available [specific times]"
+   - These override normal preferences during those periods
+
+3. TIME-SPECIFIC CONSTRAINTS:
+   - "after [time]" means meeting must START after that time
+   - "before [time]" means meeting must END before that time
+   - "not [day]" means completely unavailable that day of week
+
+VALIDATION PROCESS - Before suggesting ANY time:
+1. Check: Is anyone completely unavailable on this date?
+2. Check: Do any conditional constraints apply to this date/time?
+3. Check: Does this time meet everyone's minimum requirements?
+4. If answer is NO to any - DO NOT suggest this time
+
+CONFIDENCE LEVELS:
+- HIGH: 80%+ of people can attend with no major conflicts
+- MEDIUM: 60-79% can attend OR has minor conflicts
+- LOW: Less than 60% can attend OR major conflicts exist
+
+Always provide exactly 3 suggestions. Be specific about WHO each time works for and WHO it doesn't work for.
 
 Return JSON:
-{"summary": "Brief overview of what works best for the group and main timing considerations", "challenges": "Key scheduling conflicts mentioning specific participants with important constraints", "suggestions": [{"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Concise reasoning highlighting key participants and important constraints (e.g., 'Works for most, but conflicts with Sarah's kids bedtime' or 'Avoids John's vacation and accommodates evening preferences')"}, {"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Another concise explanation"}, {"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Third option reasoning"}], "recommendations": ["Practical next step", "Another actionable recommendation"]}`;
+{"summary": "Brief overview focusing on the main timing patterns and biggest constraints", "challenges": "Specific unavailability periods and conflicting constraints with participant names", "suggestions": [{"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "WHO this works for and WHO it conflicts with, mentioning specific constraints"}, {"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Second option with specific participant impact"}, {"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Third option with specific participant impact"}], "recommendations": ["Specific next step mentioning participants", "Another actionable recommendation"]}`;
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4o-mini", // Cost-effective model
