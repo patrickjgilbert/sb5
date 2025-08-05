@@ -1,0 +1,28 @@
+scenario_name,event_window_start,event_window_end,participant_name,availability_text,expected_best_time,expected_confidence,scenario_description,difficulty_level
+simple_evening_consensus,2025-08-10,2025-08-15,John,"I'm free most evenings after 7pm, weekdays work best",2025-08-12 19:30,high,"Simple consensus - everyone prefers evenings",easy
+simple_evening_consensus,2025-08-10,2025-08-15,Sarah,"Evenings after 6pm are great for me, prefer Tuesday-Thursday",2025-08-12 19:30,high,"Simple consensus - everyone prefers evenings",easy
+simple_evening_consensus,2025-08-10,2025-08-15,Mike,"Evening meetings work well, anytime after 7pm",2025-08-12 19:30,high,"Simple consensus - everyone prefers evenings",easy
+
+timezone_challenge,2025-08-20,2025-08-25,Alex_NYC,"I'm in NYC (EST), mornings 9am-11am or evenings 7-9pm work",2025-08-22 09:00,medium,"Multi-timezone coordination test",hard
+timezone_challenge,2025-08-20,2025-08-25,Emma_London,"I'm in London (GMT), early afternoon 1-3pm your time is perfect for me",2025-08-22 09:00,medium,"Multi-timezone coordination test",hard
+timezone_challenge,2025-08-20,2025-08-25,Carlos_LA,"I'm in LA (PST), flexible but prefer late morning 10am-12pm",2025-08-22 09:00,medium,"Multi-timezone coordination test",hard
+
+family_constraints,2025-08-15,2025-08-20,Jennifer,"I have kids' bedtime at 8pm, so before 7:30pm or after 9pm when spouse can cover",2025-08-17 11:00,high,"Family obligations with specific timing needs",medium
+family_constraints,2025-08-15,2025-08-20,David,"Weekday mornings 10am-12pm are ideal, kids are at school",2025-08-17 11:00,high,"Family obligations with specific timing needs",medium
+family_constraints,2025-08-15,2025-08-20,Lisa,"Weekend mornings work great, or weekday lunch 12-2pm",2025-08-17 11:00,high,"Family obligations with specific timing needs",medium
+
+vacation_conflicts,2025-09-01,2025-09-10,Tom,"I'm on vacation Sept 3-6, but available before or after",2025-09-02 14:00,high,"Vacation scheduling around conflicts",medium
+vacation_conflicts,2025-09-01,2025-09-10,Rachel,"Available throughout except I have a work trip Sept 7-8",2025-09-02 14:00,high,"Vacation scheduling around conflicts",medium
+vacation_conflicts,2025-09-01,2025-09-10,Kevin,"Flexible schedule, prefer afternoons between 2-5pm",2025-09-02 14:00,high,"Vacation scheduling around conflicts",medium
+
+no_perfect_solution,2025-08-25,2025-08-30,Anna,"I can only do mornings Mon-Wed 9-11am",2025-08-26 15:00,low,"Impossible to satisfy everyone - test conflict handling",hard
+no_perfect_solution,2025-08-25,2025-08-30,Brian,"Afternoons Tue-Thu 2-4pm only, have meetings mornings",2025-08-26 15:00,low,"Impossible to satisfy everyone - test conflict handling",hard
+no_perfect_solution,2025-08-25,2025-08-30,Claire,"Friday afternoon is my only free time this week",2025-08-26 15:00,low,"Impossible to satisfy everyone - test conflict handling",hard
+
+work_schedule_mix,2025-08-12,2025-08-16,Marcus,"I work 9-5 EST, lunch break 12-1pm could work or after 6pm",2025-08-14 18:30,medium,"Mixed work schedules requiring coordination",medium
+work_schedule_mix,2025-08-12,2025-08-16,Nina,"Night shift worker, best times are 10am-2pm",2025-08-14 18:30,medium,"Mixed work schedules requiring coordination",medium
+work_schedule_mix,2025-08-12,2025-08-16,Oscar,"Freelancer with flexible hours, prefer late afternoon 4-6pm",2025-08-14 18:30,medium,"Mixed work schedules requiring coordination",medium
+
+last_minute_changes,2025-08-08,2025-08-09,Grace,"Originally said evenings but my spouse just got called for surgery, only mornings now",2025-08-09 10:00,medium,"Last-minute availability changes",medium
+last_minute_changes,2025-08-08,2025-08-09,Henry,"Morning person, 8am-11am works perfectly",2025-08-09 10:00,medium,"Last-minute availability changes",medium
+last_minute_changes,2025-08-08,2025-08-09,Iris,"Flexible, can accommodate whatever works for the group",2025-08-09 10:00,medium,"Last-minute availability changes",medium 
