@@ -12,8 +12,7 @@
     "test:build": "npm run build && npm run start",
     "preview": "npm run build && npm run start",
     "test-ai": "node ai-accuracy-tester.js",
-    "test-ai-single": "node -e \"const tester = require('./ai-accuracy-tester.js'); const t = new tester(); t.loadTestScenarios().then(() => { const scenario = Array.from(t.scenarios.values()).find(s => s.name === process.argv[1]); if (scenario) t.runTestScenario(scenario); else console.log('Scenario not found'); })\"",
-    "simple-test": "node simple-ai-checker.js"
+    "test-ai-single": "node -e \"const tester = require('./ai-accuracy-tester.js'); const t = new tester(); t.loadTestScenarios().then(() => { const scenario = Array.from(t.scenarios.values()).find(s => s.name === process.argv[1]); if (scenario) t.runTestScenario(scenario); else console.log('Scenario not found'); })\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.53.0",
