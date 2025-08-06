@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { trackAdminEventCreated } from '@/lib/analytics';
 
 interface EventData {
   id: string;
@@ -189,6 +190,13 @@ export default function AdminDashboard() {
 
     loadEventData();
   }, [eventId]);
+
+  // Track admin event creation when page loads with created=true
+  useEffect(() => {
+    if (isNewlyCreated && eventData) {
+      trackAdminEventCreated(eventData.id, eventData.name);
+    }
+  }, [isNewlyCreated, eventData]);
 
   // Auto-refresh submissions
   useEffect(() => {

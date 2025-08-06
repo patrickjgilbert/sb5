@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getRecentEvents } from '@/lib/localStorage';
+import { trackUserFormSubmission } from '@/lib/analytics';
 
 interface EventData {
   id: string;
@@ -168,6 +169,8 @@ export default function ParticipantPage() {
         throw new Error('Failed to submit availability');
       }
 
+      // Track successful form submission
+      trackUserFormSubmission(eventId, formData.name);
       setSubmitted(true);
     } catch (error) {
       console.error('Error submitting:', error);
