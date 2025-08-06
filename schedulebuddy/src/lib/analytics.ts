@@ -1,7 +1,7 @@
 // lib/analytics.ts
 declare global {
   interface Window {
-    gtag: (...args: any[]) => void;
+    gtag: (...args: (string | object | Date)[]) => void;
   }
 }
 
@@ -10,7 +10,7 @@ export interface GA4EventParams {
   event_category?: string;
   event_label?: string;
   value?: number;
-  custom_parameters?: Record<string, any>;
+  custom_parameters?: Record<string, string | number | boolean>;
 }
 
 // Track GA4 Events
@@ -47,7 +47,7 @@ export const trackUserFormSubmission = (eventId: string, participantName: string
 };
 
 export const trackPageView = (page_title: string, page_location: string) => {
-  if (typeof window !== 'undefined' && window.gtag) {
+  if (typeof window !== 'undefined' && window.gtag && process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID) {
     window.gtag('config', process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID, {
       page_title,
       page_location,
