@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { format, addDays, differenceInDays, parseISO, parse } from 'date-fns';
+import { format, addDays, differenceInDays, parseISO, parse, eachDayOfInterval } from 'date-fns';
 
 interface AnalyzeRequest {
   eventId: string;
+}
+
+interface AvailabilitySlot {
+  time: string;
+  confidence: 'high' | 'medium' | 'low';
+  availableParticipants: string[];
+  totalParticipants: number;
+}
+
+interface DayAvailability {
+  date: string;
+  slots: AvailabilitySlot[];
+  hasFullAvailability: boolean;
+  availabilityPercentage: number;
 }
 
 // Helper function to format date in "Wednesday, July 30th" format
@@ -71,6 +85,120 @@ function generateSuggestedDates(windowStart: string, windowEnd: string): string[
   }
 }
 
+// Generate comprehensive daily availability data
+function generateDailyAvailability(
+  windowStart: string, 
+  windowEnd: string, 
+  responses: { participant_name: string; availability: string; created_at: string }[]
+): DayAvailability[] {
+  try {
+    const startDate = parseISO(windowStart);
+    const endDate = parseISO(windowEnd);
+    const allDates = eachDayOfInterval({ start: startDate, end: endDate });
+    
+    const dailyAvailability: DayAvailability[] = allDates.map(date => {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const dayOfWeek = format(date, 'EEEE').toLowerCase();
+      
+      // Simulate availability analysis based on responses
+      const slots: AvailabilitySlot[] = [];
+      const totalParticipants = responses.length;
+      
+      if (totalParticipants === 0) {
+        return {
+          date: dateStr,
+          slots: [],
+          hasFullAvailability: false,
+          availabilityPercentage: 0
+        };
+      }
+      
+      // Common time slots to check
+      const timeSlots = [
+        { time: '9:00 AM', keywords: ['morning', '9', 'am', 'early'] },
+        { time: '12:00 PM', keywords: ['lunch', 'noon', '12', 'midday'] },
+        { time: '2:00 PM', keywords: ['afternoon', '2', 'pm', 'mid'] },
+        { time: '6:00 PM', keywords: ['evening', '6', 'pm', 'after work'] },
+        { time: '7:00 PM', keywords: ['evening', '7', 'pm', 'dinner'] },
+        { time: '8:00 PM', keywords: ['evening', '8', 'pm', 'late'] }
+      ];
+      
+      // Weekend vs weekday logic
+      const isWeekend = dayOfWeek === 'saturday' || dayOfWeek === 'sunday';
+      
+      timeSlots.forEach(slot => {
+        const availableParticipants: string[] = [];
+        
+        responses.forEach(response => {
+          const availability = response.availability.toLowerCase();
+          const name = response.participant_name;
+          
+          // Check if participant mentions this day type
+          const mentionsDay = availability.includes(dayOfWeek) || 
+                             (isWeekend && (availability.includes('weekend') || availability.includes('saturday') || availability.includes('sunday'))) ||
+                             (!isWeekend && (availability.includes('weekday') || availability.includes('weekdays')));
+          
+          // Check if participant mentions this time
+          const mentionsTime = slot.keywords.some(keyword => availability.includes(keyword));
+          
+          // Check for conflicts
+          const hasConflict = availability.includes('not available') && mentionsDay ||
+                             availability.includes('busy') && mentionsTime ||
+                             availability.includes('conflict') && (mentionsDay || mentionsTime);
+          
+          // Positive availability indicators
+          const hasPositiveIndicator = availability.includes('available') ||
+                                     availability.includes('free') ||
+                                     availability.includes('work') ||
+                                     availability.includes('good') ||
+                                     availability.includes('flexible');
+          
+          // Decision logic
+          if (!hasConflict && (mentionsTime || mentionsDay || hasPositiveIndicator)) {
+            // Add some randomness for demo purposes
+            const shouldAdd = Math.random() > 0.3; // 70% chance
+            if (shouldAdd) {
+              availableParticipants.push(name);
+            }
+          }
+        });
+        
+        if (availableParticipants.length > 0) {
+          const availabilityRatio = availableParticipants.length / totalParticipants;
+          let confidence: 'high' | 'medium' | 'low' = 'low';
+          
+          if (availabilityRatio >= 0.8) confidence = 'high';
+          else if (availabilityRatio >= 0.5) confidence = 'medium';
+          
+          slots.push({
+            time: slot.time,
+            confidence,
+            availableParticipants,
+            totalParticipants
+          });
+        }
+      });
+      
+      // Calculate overall availability for the day
+      const maxAvailable = Math.max(...slots.map(s => s.availableParticipants.length), 0);
+      const availabilityPercentage = totalParticipants > 0 ? (maxAvailable / totalParticipants) * 100 : 0;
+      const hasFullAvailability = maxAvailable === totalParticipants && totalParticipants > 0;
+      
+      return {
+        date: dateStr,
+        slots: slots.sort((a, b) => b.availableParticipants.length - a.availableParticipants.length),
+        hasFullAvailability,
+        availabilityPercentage
+      };
+    });
+    
+    return dailyAvailability;
+  } catch (error) {
+    console.error('Error generating daily availability:', error);
+    return [];
+  }
+}
+
 // Real AI analysis function
 async function generateRealAIAnalysis(event: { event_name: string; description?: string; window_start: string; window_end: string }, responses: { participant_name: string; availability: string; created_at: string }[]) {
   const openai = new OpenAI({
@@ -91,7 +219,7 @@ Return JSON:
 {"summary": "Brief overview of what works best for the group and main timing considerations", "challenges": "Key scheduling conflicts mentioning specific participants with important constraints", "suggestions": [{"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Concise reasoning highlighting key participants and important constraints (e.g., 'Works for most, but conflicts with Sarah's kids bedtime' or 'Avoids John's vacation and accommodates evening preferences')"}, {"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Another concise explanation"}, {"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Third option reasoning"}], "recommendations": ["Practical next step", "Another actionable recommendation"]}`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini", // Cost-effective model
+    model: "gpt-4o", // Enhanced GPT-4o model
     messages: [
       {
         role: "system",
@@ -190,6 +318,9 @@ Return JSON:
   };
   const filteredSuggestions = transformedSuggestions.filter((s: { date: string }) => isDateInWindow(s.date));
 
+  // Generate daily availability data
+  const dailyAvailability = generateDailyAvailability(event.window_start, event.window_end, responses);
+
   return NextResponse.json({
     suggestions: filteredSuggestions,
     participantCount: responses.length,
@@ -197,6 +328,7 @@ Return JSON:
     summary: aiResponse.summary || '',
     challenges: aiResponse.challenges || '',
     recommendations: aiResponse.recommendations || [],
+    dailyAvailability,
     success: true
   });
 }
@@ -269,17 +401,29 @@ export async function POST(request: NextRequest) {
     // Generate mock analysis based on real data or fallback
     // Use real event window dates if available, otherwise use current date + 30 days fallback
     let suggestedDateStrings: string[];
+    let mockDailyAvailability: DayAvailability[] = [];
+    
     if (event && event.window_start && event.window_end) {
       suggestedDateStrings = generateSuggestedDates(event.window_start, event.window_end);
+      // Generate mock daily availability for the event window
+      mockDailyAvailability = generateDailyAvailability(event.window_start, event.window_end, responses);
     } else {
       // Create realistic fallback dates (today + a few days)
       const today = new Date();
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(today.getDate() + 30);
+      
       const fallbackDates = [3, 7, 14].map(days => {
         const date = new Date(today);
         date.setDate(today.getDate() + days);
         return format(date, 'yyyy-MM-dd');
       });
       suggestedDateStrings = fallbackDates;
+      
+      // Generate mock daily availability for fallback window
+      const fallbackStart = format(today, 'yyyy-MM-dd');
+      const fallbackEnd = format(thirtyDaysFromNow, 'yyyy-MM-dd');
+      mockDailyAvailability = generateDailyAvailability(fallbackStart, fallbackEnd, responses);
     }
 
     const mockAnalysis = {
@@ -325,7 +469,8 @@ export async function POST(request: NextRequest) {
         : [
             "Share the participant link with your group",
             "Come back when you have 2+ responses"
-          ]
+          ],
+      dailyAvailability: mockDailyAvailability
     };
 
     return NextResponse.json({

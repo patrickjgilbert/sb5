@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { trackAdminEventCreated } from '@/lib/analytics';
+import CalendarWidget from './components/CalendarWidget';
 
 interface EventData {
   id: string;
@@ -21,6 +22,20 @@ interface Submission {
   submittedAt: string;
 }
 
+interface AvailabilitySlot {
+  time: string;
+  confidence: 'high' | 'medium' | 'low';
+  availableParticipants: string[];
+  totalParticipants: number;
+}
+
+interface DayAvailability {
+  date: string;
+  slots: AvailabilitySlot[];
+  hasFullAvailability: boolean;
+  availabilityPercentage: number;
+}
+
 interface AnalysisResult {
   suggestions: Array<{
     date: string;
@@ -33,6 +48,7 @@ interface AnalysisResult {
   challenges?: string;
   recommendations: string[];
   lastUpdated: string;
+  dailyAvailability?: DayAvailability[];
 }
 
 export default function AdminDashboard() {
@@ -576,6 +592,17 @@ export default function AdminDashboard() {
                </div>
              </div>
           </div>
+        )}
+
+        {/* 3.5. Calendar Availability Widget */}
+        {analysis && eventData && (
+          <CalendarWidget 
+            eventData={eventData}
+            analysis={analysis}
+            onDateSelect={(date, availability) => {
+              console.log('Date selected:', date, availability);
+            }}
+          />
         )}
 
                  {/* No Analysis State */}
