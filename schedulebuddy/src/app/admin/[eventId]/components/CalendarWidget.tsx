@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths, parseISO, startOfWeek, endOfWeek } from 'date-fns';
 
 interface AvailabilitySlot {
   time: string;
@@ -51,10 +51,15 @@ export default function CalendarWidget({ eventData, analysis, onDateSelect }: Ca
   const windowStart = parseISO(eventData.windowStart);
   const windowEnd = parseISO(eventData.windowEnd);
 
-  // Generate calendar days
+  // Generate calendar days with proper week alignment
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
-  const calendarDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  
+  // Get the start and end of the calendar grid (including leading/trailing days)
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 }); // Sunday = 0
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+  
+  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   // Get availability for a specific date
   const getDateAvailability = (date: Date): DayAvailability | null => {
@@ -69,6 +74,12 @@ export default function CalendarWidget({ eventData, analysis, onDateSelect }: Ca
 
   // Get color for date based on availability
   const getDateColor = (date: Date): string => {
+    // Dates outside current month
+    if (!isSameMonth(date, currentMonth)) {
+      return 'bg-gray-50 text-gray-300'; // Muted style for other month dates
+    }
+
+    // Dates outside event window
     if (!isInEventWindow(date)) {
       return 'bg-gray-100 text-gray-400'; // Outside window
     }
@@ -102,7 +113,8 @@ export default function CalendarWidget({ eventData, analysis, onDateSelect }: Ca
     const dateStr = format(date, 'yyyy-MM-dd');
     const availability = getDateAvailability(date);
 
-    if (!availability || !isInEventWindow(date)) return;
+    // Don't allow interaction with dates outside current month or event window
+    if (!isSameMonth(date, currentMonth) || !availability || !isInEventWindow(date)) return;
 
     if (isClick || isMobile) {
       setSelectedDate(selectedDate === dateStr ? null : dateStr);
@@ -114,6 +126,9 @@ export default function CalendarWidget({ eventData, analysis, onDateSelect }: Ca
 
   // Check if date is a suggested meeting time
   const isSuggestedDate = (date: Date): boolean => {
+    // Only show suggestions for dates in current month and within event window
+    if (!isSameMonth(date, currentMonth) || !isInEventWindow(date)) return false;
+    
     const dateStr = format(date, 'yyyy-MM-dd');
     return analysis?.suggestions?.some(suggestion => {
       // Handle both formatted dates (e.g., "Wednesday, July 30th") and ISO dates
@@ -197,23 +212,25 @@ export default function CalendarWidget({ eventData, analysis, onDateSelect }: Ca
           const isHovered = hoveredDate === dateStr;
           const isSuggested = isSuggestedDate(date);
           const inWindow = isInEventWindow(date);
+          const inCurrentMonth = isSameMonth(date, currentMonth);
+          const canInteract = inCurrentMonth && inWindow && getDateAvailability(date);
 
           return (
             <div
               key={dateStr}
               className={`
-                relative h-12 rounded-lg cursor-pointer transition-all duration-200 flex items-center justify-center text-sm font-medium border-2
+                relative h-12 rounded-lg transition-all duration-200 flex items-center justify-center text-sm font-medium border-2
                 ${getDateColor(date)}
                 ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
                 ${isHovered && !isSelected ? 'ring-1 ring-gray-400' : ''}
                 ${isSuggested ? 'border-purple-500 border-2' : 'border-transparent'}
-                ${!inWindow ? 'cursor-not-allowed' : ''}
+                ${canInteract ? 'cursor-pointer' : 'cursor-default'}
               `}
               onClick={() => handleDateInteraction(date, true)}
               onMouseEnter={() => !isMobile && handleDateInteraction(date, false)}
               onMouseLeave={() => !isMobile && setHoveredDate(null)}
             >
-              <span className={`${!isSameMonth(date, currentMonth) ? 'opacity-50' : ''}`}>
+              <span>
                 {format(date, 'd')}
               </span>
               
@@ -228,7 +245,7 @@ export default function CalendarWidget({ eventData, analysis, onDateSelect }: Ca
               )}
               
               {/* Availability dots */}
-              {availability && availability.slots.length > 0 && (
+              {inCurrentMonth && availability && availability.slots.length > 0 && (
                 <div className="absolute bottom-1 right-1 flex gap-1">
                   {availability.slots.slice(0, 3).map((_, i) => (
                     <div key={i} className="w-1 h-1 bg-current rounded-full opacity-60"></div>
