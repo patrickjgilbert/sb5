@@ -17,7 +17,7 @@ function eachDateInclusive(startISO: string, endISO: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const { eventId, require_time = false } = await req.json();
+  const { eventId } = await req.json();
   if (!eventId) return NextResponse.json({ error: "eventId required" }, { status: 400 });
 
   const { data: event, error: eErr } = await supabase
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       else if (hardNo) unavailable_names.push(r.participant_name);
     }
 
-    // TODO: add time-weighting here if require_time === true and you store partial day prefs
+    // TODO: add time-weighting here if needed in the future
     const total = (rows || []).length || 1;
     const score = available_names.length / total;
 

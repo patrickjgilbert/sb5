@@ -52,7 +52,7 @@ raw_response: """${raw_text}"""
     });
 
     const content = completion.choices[0]?.message?.content ?? "{}";
-    let parsedJSON: any;
+    let parsedJSON: unknown;
     try { parsedJSON = JSON.parse(content); }
     catch { return NextResponse.json({ error: "LLM JSON parse error", raw: content }, { status: 502 }); }
 
@@ -73,7 +73,7 @@ raw_response: """${raw_text}"""
     if (error) return NextResponse.json({ error: "Database upsert error", details: error }, { status: 500 });
 
     return NextResponse.json({ ok: true, normalized: cleaned });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error(e);
     return NextResponse.json({ error: "Normalize failed" }, { status: 500 });
   }

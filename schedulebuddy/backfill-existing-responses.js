@@ -25,7 +25,15 @@ async function backfillResponses() {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     // Get all responses that don't have normalized data yet
-    const { data: responses, error: responseError } = await supabase
+    // First, get the list of response IDs that already have normalized data
+    const { data: normalizedIds } = await supabase
+      .from('availability_normalized')
+      .select('response_id');
+    
+    const excludeIds = normalizedIds?.map(n => n.response_id) || [];
+    
+    // Get responses that haven't been normalized yet
+    let responsesQuery = supabase
       .from('responses')
       .select(`
         id,
@@ -37,11 +45,14 @@ async function backfillResponses() {
           window_end,
           tz
         )
-      `)
-      .not('id', 'in', 
-        // Exclude responses that already have normalized data
-        `(SELECT response_id FROM availability_normalized)`
-      );
+      `);
+    
+    // Only exclude if there are IDs to exclude
+    if (excludeIds.length > 0) {
+      responsesQuery = responsesQuery.not('id', 'in', `(${excludeIds.join(',')})`);
+    }
+    
+    const { data: responses, error: responseError } = await responsesQuery;
 
     if (responseError) {
       console.error('❌ Error fetching responses:', responseError);

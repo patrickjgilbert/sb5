@@ -20,7 +20,7 @@ export function cleanNormalized(json: unknown, windowStart: string, windowEnd: s
 
   parsed.available_dates = available;
   parsed.unavailable_dates = unavailable;
-  parsed.partial_constraints = parsed.partial_constraints.filter((pc: any) => inWindow(pc.date));
+  parsed.partial_constraints = parsed.partial_constraints.filter((pc: { date: string }) => inWindow(pc.date));
 
   return parsed;
 } 
