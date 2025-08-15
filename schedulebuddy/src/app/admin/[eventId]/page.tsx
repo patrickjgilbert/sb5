@@ -47,6 +47,12 @@ interface AnalysisResult {
     available_names: string[];
     unavailable_names: string[];
     score: number;
+    suggestedTimes?: Array<{
+      time: string;
+      score: number;
+      suitableParticipants: string[];
+      confidence: 'high' | 'medium' | 'low';
+    }>;
   }>;
   summary: {
     top_pick: string | null;
@@ -544,6 +550,31 @@ export default function AdminDashboard() {
               )}
             </div>
 
+            {/* Calendar Availability Widget */}
+            {eventData && (
+              <div className="mb-8">
+                <CalendarWidget 
+                  eventData={eventData}
+                  analysis={{
+                    suggestions: [],
+                    dailyAvailability: analysis.heatmap?.map(h => ({
+                      date: h.date,
+                      slots: [],
+                      hasFullAvailability: h.score === 1.0,
+                      availabilityPercentage: h.score * 100,
+                      availableParticipants: h.available_names || [],
+                      unavailableParticipants: h.unavailable_names || [],
+                      totalParticipants: (h.available_names?.length || 0) + (h.unavailable_names?.length || 0),
+                      suggestedTimes: h.suggestedTimes || []
+                    })) || []
+                  }}
+                  onDateSelect={(date, availability) => {
+                    console.log('Date selected:', date, availability);
+                  }}
+                />
+              </div>
+            )}
+
             {/* Ranked Dates */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -637,27 +668,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* 3.5. Calendar Availability Widget */}
-        {analysis && eventData && (
-          <CalendarWidget 
-            eventData={eventData}
-            analysis={{
-              suggestions: [],
-              dailyAvailability: analysis.heatmap?.map(h => ({
-                date: h.date,
-                slots: [],
-                hasFullAvailability: h.score === 1.0,
-                availabilityPercentage: h.score * 100,
-                availableParticipants: h.available_names || [],
-                unavailableParticipants: h.unavailable_names || [],
-                totalParticipants: (h.available_names?.length || 0) + (h.unavailable_names?.length || 0)
-              })) || []
-            }}
-            onDateSelect={(date, availability) => {
-              console.log('Date selected:', date, availability);
-            }}
-          />
-        )}
+
 
                  {/* No Analysis State */}
          {!analysis && submissions.length > 0 && (

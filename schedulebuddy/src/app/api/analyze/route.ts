@@ -16,6 +16,134 @@ function eachDateInclusive(startISO: string, endISO: string) {
   return out;
 }
 
+function generateSuggestedTimes(date: string, availableParticipants: string[], rows: any[]) {
+  const timeSlots = [
+    '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
+    '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM',
+    '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM'
+  ];
+
+  const timeSlotScores = timeSlots.map(time => {
+    let score = 0;
+    let suitableParticipants: string[] = [];
+    
+    // Get day of week for this date
+    const dayOfWeek = new Date(date + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'long' });
+    
+    for (const participant of availableParticipants) {
+      const participantData = rows.find(r => r.participant_name === participant);
+      if (!participantData) continue;
+      
+      let participantScore = 0.5; // Default neutral score
+      
+      // Check global time preferences
+      if (participantData.global_time_prefs) {
+        for (const pref of participantData.global_time_prefs) {
+          // Handle "after X" preferences
+          if (pref.preferred_time && typeof pref.preferred_time === 'string') {
+            if (pref.preferred_time.includes('after')) {
+              const afterTime = pref.preferred_time.replace('after ', '').replace('19:30', '7:30 PM');
+              if (isTimeAfter(time, afterTime)) {
+                participantScore = 1.0;
+              }
+            }
+          }
+          
+          // Handle day-specific preferences
+          if (pref.days && Array.isArray(pref.days) && pref.days.includes(dayOfWeek)) {
+            if (pref.preferred_time === '12:00' && time === '12:00 PM') {
+              participantScore = 1.0;
+            }
+            if (pref.available_times && Array.isArray(pref.available_times)) {
+              for (const availTime of pref.available_times) {
+                if (availTime.includes('after 8 pm') && isTimeAfter(time, '8:00 PM')) {
+                  participantScore = Math.max(participantScore, 0.9);
+                }
+                if (availTime.includes('workday') && isWorkdayTime(time)) {
+                  participantScore = Math.max(participantScore, 0.7);
+                }
+              }
+            }
+          }
+          
+          // Handle timezone-specific preferences (simplified)
+          if (pref.start_time && pref.end_time) {
+            const startTime = convertTo12Hour(pref.start_time);
+            const endTime = convertTo12Hour(pref.end_time);
+            if (isTimeBetween(time, startTime, endTime)) {
+              participantScore = 0.8;
+            }
+          }
+        }
+      }
+      
+      score += participantScore;
+      if (participantScore > 0.6) {
+        suitableParticipants.push(participant);
+      }
+    }
+    
+    return {
+      time,
+      score: score / availableParticipants.length,
+      suitableParticipants,
+      confidence: score / availableParticipants.length > 0.8 ? 'high' : 
+                 score / availableParticipants.length > 0.6 ? 'medium' : 'low'
+    };
+  });
+
+  // Sort by score and return top suggestions
+  return timeSlotScores
+    .filter(slot => slot.score > 0.3) // Only show reasonable times
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5); // Top 5 suggestions
+}
+
+function isTimeAfter(timeToCheck: string, afterTime: string): boolean {
+  const check = convertToMinutes(timeToCheck);
+  const after = convertToMinutes(afterTime);
+  return check >= after;
+}
+
+function isTimeBetween(timeToCheck: string, startTime: string, endTime: string): boolean {
+  const check = convertToMinutes(timeToCheck);
+  const start = convertToMinutes(startTime);
+  const end = convertToMinutes(endTime);
+  
+  if (start <= end) {
+    return check >= start && check <= end;
+  } else {
+    // Handle overnight time ranges
+    return check >= start || check <= end;
+  }
+}
+
+function isWorkdayTime(time: string): boolean {
+  const minutes = convertToMinutes(time);
+  return minutes >= convertToMinutes('9:00 AM') && minutes <= convertToMinutes('5:00 PM');
+}
+
+function convertToMinutes(time: string): number {
+  const [timePart, period] = time.split(' ');
+  const [hours, minutes] = timePart.split(':').map(Number);
+  let totalMinutes = hours * 60 + (minutes || 0);
+  
+  if (period === 'PM' && hours !== 12) {
+    totalMinutes += 12 * 60;
+  } else if (period === 'AM' && hours === 12) {
+    totalMinutes -= 12 * 60;
+  }
+  
+  return totalMinutes;
+}
+
+function convertTo12Hour(time24: string): string {
+  const [hours, minutes] = time24.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const hours12 = hours % 12 || 12;
+  return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+}
+
 export async function POST(req: NextRequest) {
   const { eventId } = await req.json();
   if (!eventId) return NextResponse.json({ error: "eventId required" }, { status: 400 });
@@ -56,11 +184,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // TODO: add time-weighting here if needed in the future
+    // Generate suggested times for this date
+    const suggestedTimes = available_names.length > 0 
+      ? generateSuggestedTimes(date, available_names, rows || [])
+      : [];
+
     const total = (rows || []).length || 1;
     const score = available_names.length / total;
 
-    return { date, available_names, unavailable_names, score };
+    return { date, available_names, unavailable_names, score, suggestedTimes };
   }).sort((a, b) => b.score - a.score);
 
   const ranked_dates = perDate.map(d => ({

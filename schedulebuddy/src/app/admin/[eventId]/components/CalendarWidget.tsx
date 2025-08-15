@@ -10,6 +10,13 @@ interface AvailabilitySlot {
   totalParticipants: number;
 }
 
+interface SuggestedTime {
+  time: string;
+  score: number;
+  suitableParticipants: string[];
+  confidence: 'high' | 'medium' | 'low';
+}
+
 interface DayAvailability {
   date: string;
   slots: AvailabilitySlot[];
@@ -18,6 +25,7 @@ interface DayAvailability {
   availableParticipants?: string[];
   unavailableParticipants?: string[];
   totalParticipants?: number;
+  suggestedTimes?: SuggestedTime[];
 }
 
 interface CalendarWidgetProps {
@@ -366,8 +374,56 @@ export default function CalendarWidget({ eventData, analysis, onDateSelect }: Ca
                 </div>
               )}
 
+              {/* Suggested Times */}
+              {availability.suggestedTimes && availability.suggestedTimes.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-blue-900 mb-3 flex items-center">
+                    🕐 Suggested Meeting Times
+                    <span className="ml-2 text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                      Based on participant preferences
+                    </span>
+                  </p>
+                  <div className="space-y-2">
+                    {availability.suggestedTimes.map((suggestion, index) => (
+                      <div key={index} className="bg-white rounded-lg p-3 border border-blue-200 shadow-sm">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-semibold text-gray-900 text-lg">
+                            {suggestion.time}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              suggestion.confidence === 'high' ? 'bg-green-100 text-green-800' :
+                              suggestion.confidence === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {suggestion.confidence} match
+                            </span>
+                            <span className="text-sm text-gray-600">
+                              {Math.round(suggestion.score * 100)}% suitable
+                            </span>
+                          </div>
+                        </div>
+                        {suggestion.suitableParticipants.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            <span className="text-xs text-gray-600 mr-2">Works well for:</span>
+                            {suggestion.suitableParticipants.map((name, pIndex) => (
+                              <span key={pIndex} className="inline-flex items-center gap-1 bg-green-50 text-green-700 text-xs px-2 py-1 rounded">
+                                <div className="w-3 h-3 bg-green-200 rounded-full flex items-center justify-center text-green-800 font-medium text-xs">
+                                  {name.charAt(0).toUpperCase()}
+                                </div>
+                                {name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Fallback message when no detailed data is available */}
-              {!hasParticipantData && availability.slots.length === 0 && (
+              {!hasParticipantData && availability.slots.length === 0 && !availability.suggestedTimes && (
                 <div className="text-sm text-gray-600 italic bg-gray-50 rounded p-3">
                   💡 Detailed participant information will be available after running AI analysis with participant responses.
                 </div>
