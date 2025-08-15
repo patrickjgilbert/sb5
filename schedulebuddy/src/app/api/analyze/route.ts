@@ -45,9 +45,15 @@ export async function POST(req: NextRequest) {
       const yesExplicit = (r.available_dates || []).includes(date);
       const flexibleElsewhere = !!r?.inference_flags?.assumed_flexible_elsewhere;
 
-      const yes = yesExplicit || (flexibleElsewhere && !hardNo);
-      if (yes) available_names.push(r.participant_name);
-      else if (hardNo) unavailable_names.push(r.participant_name);
+      if (hardNo) {
+        unavailable_names.push(r.participant_name);
+      } else if (yesExplicit || flexibleElsewhere) {
+        available_names.push(r.participant_name);
+      } else {
+        // If no explicit constraints for this date, assume available
+        // This handles participants with only time-based constraints
+        available_names.push(r.participant_name);
+      }
     }
 
     // TODO: add time-weighting here if needed in the future

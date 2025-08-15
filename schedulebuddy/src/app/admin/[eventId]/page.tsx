@@ -576,7 +576,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <p className="text-gray-600">
-                    ↳ {rankedDate.available_count} out of {analysis.heatmap?.length || 'unknown'} participants available
+                    ↳ {rankedDate.available_count} out of {submissions.length} participants available
                   </p>
                 </div>
               ))}
@@ -647,7 +647,10 @@ export default function AdminDashboard() {
                 date: h.date,
                 slots: [],
                 hasFullAvailability: h.score === 1.0,
-                availabilityPercentage: h.score * 100
+                availabilityPercentage: h.score * 100,
+                availableParticipants: h.available_names || [],
+                unavailableParticipants: h.unavailable_names || [],
+                totalParticipants: (h.available_names?.length || 0) + (h.unavailable_names?.length || 0)
               })) || []
             }}
             onDateSelect={(date, availability) => {
