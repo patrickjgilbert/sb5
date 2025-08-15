@@ -16,7 +16,12 @@ function eachDateInclusive(startISO: string, endISO: string) {
   return out;
 }
 
-function generateSuggestedTimes(date: string, availableParticipants: string[], rows: any[]) {
+interface ParticipantData {
+  participant_name: string;
+  global_time_prefs?: Record<string, unknown>[];
+}
+
+function generateSuggestedTimes(date: string, availableParticipants: string[], rows: ParticipantData[]) {
   const timeSlots = [
     '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
     '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM',
@@ -25,7 +30,7 @@ function generateSuggestedTimes(date: string, availableParticipants: string[], r
 
   const timeSlotScores = timeSlots.map(time => {
     let score = 0;
-    let suitableParticipants: string[] = [];
+    const suitableParticipants: string[] = [];
     
     // Get day of week for this date
     const dayOfWeek = new Date(date + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'long' });
@@ -67,7 +72,7 @@ function generateSuggestedTimes(date: string, availableParticipants: string[], r
           }
           
           // Handle timezone-specific preferences (simplified)
-          if (pref.start_time && pref.end_time) {
+          if (typeof pref.start_time === 'string' && typeof pref.end_time === 'string') {
             const startTime = convertTo12Hour(pref.start_time);
             const endTime = convertTo12Hour(pref.end_time);
             if (isTimeBetween(time, startTime, endTime)) {
