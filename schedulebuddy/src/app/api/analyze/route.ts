@@ -1,488 +1,74 @@
-import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
-import { format, addDays, differenceInDays, parseISO, parse, eachDayOfInterval } from 'date-fns';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-interface AnalyzeRequest {
-  eventId: string;
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-interface AvailabilitySlot {
-  time: string;
-  confidence: 'high' | 'medium' | 'low';
-  availableParticipants: string[];
-  totalParticipants: number;
-}
-
-interface DayAvailability {
-  date: string;
-  slots: AvailabilitySlot[];
-  hasFullAvailability: boolean;
-  availabilityPercentage: number;
-}
-
-// Helper function to format date in "Wednesday, July 30th" format
-function formatDateForDisplay(dateString: string): string {
-  try {
-    const date = parseISO(dateString);
-    
-    // Use manual formatting to ensure exact "Wednesday, July 30th" format
-    const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
-    const month = date.toLocaleDateString('en-US', { month: 'long' });
-    const dayNum = date.getDate();
-    
-    const getOrdinalSuffix = (day: number) => {
-      if (day > 3 && day < 21) return 'th';
-      switch (day % 10) {
-        case 1: return 'st';
-        case 2: return 'nd';
-        case 3: return 'rd';
-        default: return 'th';
-      }
-    };
-    
-    return `${dayOfWeek}, ${month} ${dayNum}${getOrdinalSuffix(dayNum)}`;
-  } catch (error) {
-    console.error('Date formatting error:', error);
-    return dateString; // Return original if parsing fails
+function eachDateInclusive(startISO: string, endISO: string) {
+  const out: string[] = [];
+  const start = new Date(startISO + "T00:00:00Z");
+  const end   = new Date(endISO + "T00:00:00Z");
+  for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+    out.push(d.toISOString().slice(0,10));
   }
+  return out;
 }
 
-// Helper function to generate dates within event window using date-fns
-function generateSuggestedDates(windowStart: string, windowEnd: string): string[] {
-  try {
-    const startDate = parseISO(windowStart);
-    const endDate = parseISO(windowEnd);
-    const daysDiff = differenceInDays(endDate, startDate);
-    
-    const suggestedDates: string[] = [];
-    
-    if (daysDiff <= 3) {
-      // For short windows, suggest every available day
-      for (let i = 0; i <= daysDiff; i++) {
-        const suggestionDate = addDays(startDate, i);
-        suggestedDates.push(format(suggestionDate, 'yyyy-MM-dd'));
-      }
-    } else {
-      // For longer windows, suggest 3 strategic dates
-      // First suggestion: 20% into the window
-      const firstSuggestion = addDays(startDate, Math.floor(daysDiff * 0.2));
-      suggestedDates.push(format(firstSuggestion, 'yyyy-MM-dd'));
-      
-      // Second suggestion: 50% into the window  
-      const secondSuggestion = addDays(startDate, Math.floor(daysDiff * 0.5));
-      suggestedDates.push(format(secondSuggestion, 'yyyy-MM-dd'));
-      
-      // Third suggestion: 80% into the window
-      const thirdSuggestion = addDays(startDate, Math.floor(daysDiff * 0.8));
-      suggestedDates.push(format(thirdSuggestion, 'yyyy-MM-dd'));
+export async function POST(req: NextRequest) {
+  const { eventId, require_time = false } = await req.json();
+  if (!eventId) return NextResponse.json({ error: "eventId required" }, { status: 400 });
+
+  const { data: event, error: eErr } = await supabase
+    .from("events")
+    .select("window_start, window_end, tz")
+    .eq("id", eventId)
+    .single();
+  if (eErr || !event) return NextResponse.json({ error: "event not found" }, { status: 404 });
+
+  const dates = eachDateInclusive(event.window_start, event.window_end);
+
+  const { data: rows, error } = await supabase
+    .from("availability_normalized")
+    .select("*")
+    .eq("event_id", eventId);
+
+  if (error) return NextResponse.json({ error: "db error", details: error }, { status: 500 });
+
+  const perDate = dates.map(date => {
+    const available_names: string[] = [];
+    const unavailable_names: string[] = [];
+
+    for (const r of rows || []) {
+      const hardNo = (r.unavailable_dates || []).includes(date);
+      const yesExplicit = (r.available_dates || []).includes(date);
+      const flexibleElsewhere = !!r?.inference_flags?.assumed_flexible_elsewhere;
+
+      const yes = yesExplicit || (flexibleElsewhere && !hardNo);
+      if (yes) available_names.push(r.participant_name);
+      else if (hardNo) unavailable_names.push(r.participant_name);
     }
-    
-    return suggestedDates;
-  } catch (error) {
-    console.error('Date generation error:', error);
-    // Fallback to current logic
-    return ["2025-07-30", "2025-08-01", "2025-08-03"];
-  }
-}
 
-// Generate comprehensive daily availability data
-function generateDailyAvailability(
-  windowStart: string, 
-  windowEnd: string, 
-  responses: { participant_name: string; availability: string; created_at: string }[]
-): DayAvailability[] {
-  try {
-    const startDate = parseISO(windowStart);
-    const endDate = parseISO(windowEnd);
-    const allDates = eachDayOfInterval({ start: startDate, end: endDate });
-    
-    const dailyAvailability: DayAvailability[] = allDates.map(date => {
-      const dateStr = format(date, 'yyyy-MM-dd');
-      const dayOfWeek = format(date, 'EEEE').toLowerCase();
-      
-      // Simulate availability analysis based on responses
-      const slots: AvailabilitySlot[] = [];
-      const totalParticipants = responses.length;
-      
-      if (totalParticipants === 0) {
-        return {
-          date: dateStr,
-          slots: [],
-          hasFullAvailability: false,
-          availabilityPercentage: 0
-        };
-      }
-      
-      // Common time slots to check
-      const timeSlots = [
-        { time: '9:00 AM', keywords: ['morning', '9', 'am', 'early'] },
-        { time: '12:00 PM', keywords: ['lunch', 'noon', '12', 'midday'] },
-        { time: '2:00 PM', keywords: ['afternoon', '2', 'pm', 'mid'] },
-        { time: '6:00 PM', keywords: ['evening', '6', 'pm', 'after work'] },
-        { time: '7:00 PM', keywords: ['evening', '7', 'pm', 'dinner'] },
-        { time: '8:00 PM', keywords: ['evening', '8', 'pm', 'late'] }
-      ];
-      
-      // Weekend vs weekday logic
-      const isWeekend = dayOfWeek === 'saturday' || dayOfWeek === 'sunday';
-      
-      timeSlots.forEach(slot => {
-        const availableParticipants: string[] = [];
-        
-        responses.forEach(response => {
-          const availability = response.availability.toLowerCase();
-          const name = response.participant_name;
-          
-          // Check if participant mentions this day type
-          const mentionsDay = availability.includes(dayOfWeek) || 
-                             (isWeekend && (availability.includes('weekend') || availability.includes('saturday') || availability.includes('sunday'))) ||
-                             (!isWeekend && (availability.includes('weekday') || availability.includes('weekdays')));
-          
-          // Check if participant mentions this time
-          const mentionsTime = slot.keywords.some(keyword => availability.includes(keyword));
-          
-          // Check for conflicts
-          const hasConflict = availability.includes('not available') && mentionsDay ||
-                             availability.includes('busy') && mentionsTime ||
-                             availability.includes('conflict') && (mentionsDay || mentionsTime);
-          
-          // Positive availability indicators
-          const hasPositiveIndicator = availability.includes('available') ||
-                                     availability.includes('free') ||
-                                     availability.includes('work') ||
-                                     availability.includes('good') ||
-                                     availability.includes('flexible');
-          
-          // Decision logic
-          if (!hasConflict && (mentionsTime || mentionsDay || hasPositiveIndicator)) {
-            // Add some randomness for demo purposes
-            const shouldAdd = Math.random() > 0.3; // 70% chance
-            if (shouldAdd) {
-              availableParticipants.push(name);
-            }
-          }
-        });
-        
-        if (availableParticipants.length > 0) {
-          const availabilityRatio = availableParticipants.length / totalParticipants;
-          let confidence: 'high' | 'medium' | 'low' = 'low';
-          
-          if (availabilityRatio >= 0.8) confidence = 'high';
-          else if (availabilityRatio >= 0.5) confidence = 'medium';
-          
-          slots.push({
-            time: slot.time,
-            confidence,
-            availableParticipants,
-            totalParticipants
-          });
-        }
-      });
-      
-      // Calculate overall availability for the day
-      const maxAvailable = Math.max(...slots.map(s => s.availableParticipants.length), 0);
-      const availabilityPercentage = totalParticipants > 0 ? (maxAvailable / totalParticipants) * 100 : 0;
-      const hasFullAvailability = maxAvailable === totalParticipants && totalParticipants > 0;
-      
-      return {
-        date: dateStr,
-        slots: slots.sort((a, b) => b.availableParticipants.length - a.availableParticipants.length),
-        hasFullAvailability,
-        availabilityPercentage
-      };
-    });
-    
-    return dailyAvailability;
-  } catch (error) {
-    console.error('Error generating daily availability:', error);
-    return [];
-  }
-}
+    // TODO: add time-weighting here if require_time === true and you store partial day prefs
+    const total = (rows || []).length || 1;
+    const score = available_names.length / total;
 
-// Real AI analysis function
-async function generateRealAIAnalysis(event: { event_name: string; description?: string; window_start: string; window_end: string }, responses: { participant_name: string; availability: string; created_at: string }[]) {
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
+    return { date, available_names, unavailable_names, score };
+  }).sort((a, b) => b.score - a.score);
 
-  const prompt = `Schedule analysis for ${responses.length} participants (${event.window_start} to ${event.window_end}):
+  const ranked_dates = perDate.map(d => ({
+    date: d.date,
+    available_count: d.available_names.length,
+    score: Number(d.score.toFixed(3))
+  }));
 
-${responses.map((response) => 
-  `${response.participant_name}: ${response.availability}`
-).join('\n')}
-
-Analyze participant constraints and find the best meeting times. Focus on the most important conflicts and preferences - don't analyze every participant unless they have a key constraint.
-
-Always provide exactly 3 suggestions. For each suggestion, mention only the significant constraints or conflicts that matter for that time slot.
-
-Return JSON:
-{"summary": "Brief overview of what works best for the group and main timing considerations", "challenges": "Key scheduling conflicts mentioning specific participants with important constraints", "suggestions": [{"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Concise reasoning highlighting key participants and important constraints (e.g., 'Works for most, but conflicts with Sarah's kids bedtime' or 'Avoids John's vacation and accommodates evening preferences')"}, {"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Another concise explanation"}, {"time": "Day, Date at Time", "confidence": "high/medium/low", "notes": "Third option reasoning"}], "recommendations": ["Practical next step", "Another actionable recommendation"]}`;
-
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o", // Enhanced GPT-4o model
-    messages: [
-      {
-        role: "system",
-        content: "You are a helpful scheduling assistant. Keep your language simple, friendly, and easy to understand. Focus on practical suggestions rather than complex analysis. Be concise but helpful."
-      },
-      {
-        role: "user",
-        content: prompt
-      }
-    ],
-    temperature: 0.3,
-    max_tokens: 1000  // Reduced from 1500 to save ~20% on output costs
-  });
-
-  const responseContent = completion.choices[0]?.message?.content;
-  
-  if (!responseContent) {
-    throw new Error('No response from OpenAI');
-  }
-
-  // Parse the JSON response, handling markdown code blocks
-  let aiResponse;
-  try {
-    console.log('🤖 OpenAI Raw Response:', responseContent);
-    
-    // Strip markdown code blocks if present (```json ... ```)
-    let cleanedContent = responseContent.trim();
-    if (cleanedContent.startsWith('```json')) {
-      cleanedContent = cleanedContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-    } else if (cleanedContent.startsWith('```')) {
-      cleanedContent = cleanedContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
-    }
-    
-    console.log('🧹 Cleaned Response for parsing:', cleanedContent);
-    aiResponse = JSON.parse(cleanedContent);
-    console.log('✅ Successfully parsed OpenAI response');
-  } catch (parseError) {
-    console.error('❌ Failed to parse OpenAI response:', parseError);
-    console.error('📝 Raw response content:', responseContent);
-    throw new Error('Invalid response format from AI');
-  }
-
-  // Validate the response structure
-  if (!aiResponse.suggestions || !Array.isArray(aiResponse.suggestions)) {
-    throw new Error('Invalid AI response structure');
-  }
-
-  // Transform the AI response to match our expected format
-  const transformedSuggestions = aiResponse.suggestions.map((suggestion: { time?: string; date?: string; confidence?: string; notes?: string }, index: number) => {
-    // Handle both old format (separate date/time) and new format (combined time field)
-    let date = '';
-    let time = '';
-    
-    if (suggestion.time && suggestion.time.includes(' at ')) {
-      const parts = suggestion.time.split(' at ');
-      date = parts[0];
-      time = parts[1] || 'TBD';
-    } else {
-      date = suggestion.date || suggestion.time?.split(' at ')[0] || `Option ${index + 1}`;
-      time = suggestion.time?.split(' at ')[1] || suggestion.time || "TBD";
-    }
-    
-    return {
-      date,
-      time,
-      confidence: suggestion.confidence || "medium",
-      notes: suggestion.notes || "AI-generated recommendation"
-    };
-  });
-
-  // SAFEGUARD: Filter out any AI-suggested dates that fall outside the event window.
-  const windowStartDate = parseISO(event.window_start);
-  const windowEndDate = parseISO(event.window_end);
-  const currentYear = windowStartDate.getFullYear(); // Use event year as reference
-  
-  const isDateInWindow = (dateStr: string) => {
-    try {
-      // Accept both 'Wednesday, July 30th' and 'yyyy-MM-dd' formats
-      let parsed;
-      if (/\d{4}-\d{2}-\d{2}/.test(dateStr)) {
-        parsed = parseISO(dateStr);
-      } else {
-        // Parse 'Wednesday, July 30th' format using the event's year
-        const referenceDate = new Date(currentYear, 0, 1); // January 1st of event year
-        parsed = parse(dateStr, 'EEEE, MMMM do', referenceDate);
-        
-        // If parsed year doesn't match event year, adjust it
-        if (parsed.getFullYear() !== currentYear) {
-          parsed.setFullYear(currentYear);
-        }
-      }
-      return parsed >= windowStartDate && parsed <= windowEndDate;
-    } catch {
-      return false;
-    }
-  };
-  const filteredSuggestions = transformedSuggestions.filter((s: { date: string }) => isDateInWindow(s.date));
-
-  // Generate daily availability data
-  const dailyAvailability = generateDailyAvailability(event.window_start, event.window_end, responses);
+  const top_pick = ranked_dates[0]?.date || null;
+  const runners_up = ranked_dates.slice(1, 4).map(r => r.date);
 
   return NextResponse.json({
-    suggestions: filteredSuggestions,
-    participantCount: responses.length,
-    lastUpdated: new Date().toISOString(),
-    summary: aiResponse.summary || '',
-    challenges: aiResponse.challenges || '',
-    recommendations: aiResponse.recommendations || [],
-    dailyAvailability,
-    success: true
+    ranked_dates,
+    heatmap: perDate, // for calendar
+    summary: { top_pick, runners_up, tradeoffs: [] }
   });
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const body: AnalyzeRequest = await request.json();
-    const { eventId } = body;
-
-    // Validate required fields
-    if (!eventId) {
-      return NextResponse.json(
-        { error: 'Missing eventId' },
-        { status: 400 }
-      );
-    }
-
-    let participantCount = 0;
-    let event: { event_name: string; description?: string; window_start: string; window_end: string } | null = null;
-    let responses: { participant_name: string; availability: string; created_at: string }[] = [];
-
-    // Try to fetch event and responses from Supabase, with fallback if not configured
-    try {
-      // Check if Supabase environment variables are configured
-      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        console.log('Supabase not configured - using local mode for analysis');
-      } else {
-        const { supabase } = await import('@/lib/supabase');
-
-        // Fetch event details
-        const { data: eventData, error: eventError } = await supabase
-          .from('events')
-          .select('*')
-          .eq('id', eventId)
-          .single();
-
-        if (!eventError && eventData) {
-          event = eventData;
-          
-          // Fetch all responses for this event
-          const { data: dbResponses, error: responsesError } = await supabase
-            .from('responses')
-            .select('*')
-            .eq('event_id', eventId)
-            .order('created_at', { ascending: false });
-
-          if (!responsesError && dbResponses) {
-            responses = dbResponses;
-            participantCount = dbResponses.length;
-            console.log(`Found ${participantCount} responses in database`);
-          }
-        } else {
-          console.log('Event not found in database - using local mode');
-        }
-      }
-    } catch (error) {
-      console.error('Supabase connection failed:', error);
-      console.log('Using local mode for analysis');
-    }
-
-    // Check if OpenAI API key is configured for real AI analysis
-    if (process.env.OPENAI_API_KEY && participantCount > 0 && event && responses.length > 0) {
-      try {
-        return await generateRealAIAnalysis(event, responses);
-      } catch (aiError) {
-        console.error('AI analysis failed, falling back to mock:', aiError);
-      }
-    }
-
-    // Generate mock analysis based on real data or fallback
-    // Use real event window dates if available, otherwise use current date + 30 days fallback
-    let suggestedDateStrings: string[];
-    let mockDailyAvailability: DayAvailability[] = [];
-    
-    if (event && event.window_start && event.window_end) {
-      suggestedDateStrings = generateSuggestedDates(event.window_start, event.window_end);
-      // Generate mock daily availability for the event window
-      mockDailyAvailability = generateDailyAvailability(event.window_start, event.window_end, responses);
-    } else {
-      // Create realistic fallback dates (today + a few days)
-      const today = new Date();
-      const thirtyDaysFromNow = new Date();
-      thirtyDaysFromNow.setDate(today.getDate() + 30);
-      
-      const fallbackDates = [3, 7, 14].map(days => {
-        const date = new Date(today);
-        date.setDate(today.getDate() + days);
-        return format(date, 'yyyy-MM-dd');
-      });
-      suggestedDateStrings = fallbackDates;
-      
-      // Generate mock daily availability for fallback window
-      const fallbackStart = format(today, 'yyyy-MM-dd');
-      const fallbackEnd = format(thirtyDaysFromNow, 'yyyy-MM-dd');
-      mockDailyAvailability = generateDailyAvailability(fallbackStart, fallbackEnd, responses);
-    }
-
-    const mockAnalysis = {
-      suggestions: [
-        {
-          date: formatDateForDisplay(suggestedDateStrings[0]),
-          time: "7:00 PM EST", 
-          confidence: "High",
-          notes: participantCount > 0 
-            ? "Works well for most people's schedules"
-            : "Good evening time for most work schedules"
-        },
-        {
-          date: formatDateForDisplay(suggestedDateStrings[1] || suggestedDateStrings[0]), 
-          time: "6:30 PM EST",
-          confidence: "Medium",
-          notes: participantCount > 0 
-            ? "Alternative evening option"
-            : "Earlier evening alternative"
-        },
-        {
-          date: formatDateForDisplay(suggestedDateStrings[2] || suggestedDateStrings[0]),
-          time: "2:00 PM EST", 
-          confidence: "Medium",
-          notes: participantCount > 0
-            ? "Weekend afternoon option"
-            : "Weekend afternoon alternative"
-        }
-      ],
-      summary: participantCount > 0 
-        ? `Evening times work well for your ${participantCount} participant${participantCount !== 1 ? 's' : ''}. Most prefer weekday evenings.`
-        : "Share your link to start collecting responses and get personalized suggestions.",
-      participantCount,
-      lastUpdated: new Date().toISOString(),
-      challenges: participantCount > 0 
-        ? "Some time zone differences, but good flexibility overall."
-        : "",
-      recommendations: participantCount > 0 
-        ? [
-            "Share these options with your group for voting",
-            "Schedule the preferred time and send calendar invites"
-          ]
-        : [
-            "Share the participant link with your group",
-            "Come back when you have 2+ responses"
-          ],
-      dailyAvailability: mockDailyAvailability
-    };
-
-    return NextResponse.json({
-      success: true,
-      ...mockAnalysis
-    });
-
-  } catch (error) {
-    console.error('Error analyzing responses:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
 } 

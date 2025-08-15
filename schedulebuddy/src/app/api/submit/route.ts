@@ -40,13 +40,15 @@ export async function POST(request: NextRequest) {
           console.log('Event not found in database - saving to localStorage instead');
         } else {
           // Submit response to Supabase
-          const { error: submitError } = await supabase
+          const { data: insertedResponse, error: submitError } = await supabase
             .from('responses')
             .insert({
               event_id: eventId,
               participant_name: name,
               availability: availability
-            });
+            })
+            .select()
+            .single();
 
           if (submitError) {
             console.error('Supabase submit error:', submitError);
@@ -54,6 +56,36 @@ export async function POST(request: NextRequest) {
           } else {
             console.log('Response successfully saved to Supabase');
             savedToDatabase = true;
+
+            // Call normalization after successful insert
+            try {
+              const { data: eventData } = await supabase
+                .from('events')
+                .select('window_start, window_end, tz')
+                .eq('id', eventId)
+                .single();
+
+              if (eventData && insertedResponse) {
+                const event_timezone = eventData.tz ?? "America/New_York";
+                
+                await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/normalize`, {
+                  method: "POST",
+                  headers: { "content-type": "application/json" },
+                  body: JSON.stringify({
+                    eventId,
+                    responseId: insertedResponse.id,
+                    participant_name: name,
+                    raw_text: availability,
+                    window_start: eventData.window_start,
+                    window_end: eventData.window_end,
+                    event_timezone
+                  })
+                }).catch(err => console.error("Normalize call failed", err));
+              }
+            } catch (normError) {
+              console.error("Failed to trigger normalization:", normError);
+              // Don't fail the submission if normalization fails
+            }
           }
         }
       }

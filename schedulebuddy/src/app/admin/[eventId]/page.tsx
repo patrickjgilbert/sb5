@@ -37,17 +37,33 @@ interface DayAvailability {
 }
 
 interface AnalysisResult {
-  suggestions: Array<{
+  ranked_dates: Array<{
+    date: string;
+    available_count: number;
+    score: number;
+  }>;
+  heatmap: Array<{
+    date: string;
+    available_names: string[];
+    unavailable_names: string[];
+    score: number;
+  }>;
+  summary: {
+    top_pick: string | null;
+    runners_up: string[];
+    tradeoffs: string[];
+  };
+  // Legacy fields for backward compatibility
+  suggestions?: Array<{
     date: string;
     time: string;
     confidence: string;
     notes: string;
   }>;
-  summary: string;
-  participantCount: number;
+  participantCount?: number;
   challenges?: string;
-  recommendations: string[];
-  lastUpdated: string;
+  recommendations?: string[];
+  lastUpdated?: string;
   dailyAvailability?: DayAvailability[];
 }
 
@@ -486,10 +502,10 @@ export default function AdminDashboard() {
             
             <div className="text-center bg-purple-50 rounded-lg p-4">
               <div className="text-3xl font-bold text-purple-600">
-                {analysis?.suggestions?.length || 3}
+                {analysis?.ranked_dates?.length || 3}
               </div>
               <div className="text-sm text-purple-800">
-                Meeting Suggestions
+                Date Options
               </div>
             </div>
           </div>
@@ -504,9 +520,23 @@ export default function AdminDashboard() {
             
             {/* AI Summary */}
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
-              <p className="text-gray-700 leading-relaxed">
-                {analysis.summary}
-              </p>
+              <div className="text-gray-700 leading-relaxed">
+                {analysis.summary?.top_pick && (
+                  <p className="mb-2">
+                    <strong>🎯 Top Pick:</strong> {analysis.summary.top_pick}
+                  </p>
+                )}
+                {analysis.summary?.runners_up && analysis.summary.runners_up.length > 0 && (
+                  <p className="mb-2">
+                    <strong>🥈 Alternatives:</strong> {analysis.summary.runners_up.join(', ')}
+                  </p>
+                )}
+                {analysis.summary?.tradeoffs && analysis.summary.tradeoffs.length > 0 && (
+                  <p className="text-sm text-gray-600 italic">
+                    <strong>Trade-offs:</strong> {analysis.summary.tradeoffs.join('; ')}
+                  </p>
+                )}
+              </div>
               {analysis.challenges && (
                 <p className="text-gray-600 text-sm mt-3 italic">
                   <strong>Challenges:</strong> {analysis.challenges}
@@ -514,26 +544,39 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            {/* Suggested Meeting Times */}
+            {/* Ranked Dates */}
             <div className="space-y-4">
-              {analysis.suggestions.map((suggestion, index) => (
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                📊 Ranked Date Options
+              </h3>
+              {analysis.ranked_dates?.slice(0, 5).map((rankedDate, index) => (
                 <div key={index} className="border-l-4 border-blue-500 bg-gray-50 rounded-r-lg p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      🕒 Option {index + 1}: {suggestion.date} at {suggestion.time}
-                    </h3>
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-2 sm:mt-0 ${
-                      suggestion.confidence.toLowerCase() === 'high' 
-                        ? 'bg-green-100 text-green-800'
-                        : suggestion.confidence.toLowerCase() === 'medium'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      ↳ Confidence Level: {suggestion.confidence}
-                    </span>
+                    <h4 className="text-lg font-semibold text-gray-900">
+                      📅 Option {index + 1}: {new Date(rankedDate.date).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                    </h4>
+                    <div className="flex gap-2 mt-2 sm:mt-0">
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                        rankedDate.score >= 0.8 
+                          ? 'bg-green-100 text-green-800'
+                          : rankedDate.score >= 0.6
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {Math.round(rankedDate.score * 100)}% available
+                      </span>
+                      <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {rankedDate.available_count} participants
+                      </span>
+                    </div>
                   </div>
                   <p className="text-gray-600">
-                    ↳ Reasoning: {suggestion.notes}
+                    ↳ {rankedDate.available_count} out of {analysis.heatmap?.length || 'unknown'} participants available
                   </p>
                 </div>
               ))}
@@ -598,7 +641,15 @@ export default function AdminDashboard() {
         {analysis && eventData && (
           <CalendarWidget 
             eventData={eventData}
-            analysis={analysis}
+            analysis={{
+              suggestions: [],
+              dailyAvailability: analysis.heatmap?.map(h => ({
+                date: h.date,
+                slots: [],
+                hasFullAvailability: h.score === 1.0,
+                availabilityPercentage: h.score * 100
+              })) || []
+            }}
             onDateSelect={(date, availability) => {
               console.log('Date selected:', date, availability);
             }}
@@ -707,7 +758,7 @@ export default function AdminDashboard() {
         <div className="text-center text-sm text-gray-500 py-4">
           <p>📡 This page auto-refreshes every 30 seconds to show new participant responses</p>
           <p className="text-xs mt-1">💡 AI analysis is manual only - use &ldquo;Update Analysis&rdquo; for new responses or &ldquo;Try Different Suggestions&rdquo; for alternative recommendations</p>
-          {analysis && (
+          {analysis && analysis.lastUpdated && (
             <p className="mt-1">
               Last AI analysis: {new Date(analysis.lastUpdated).toLocaleString()}
             </p>
